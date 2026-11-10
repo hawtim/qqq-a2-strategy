@@ -1,0 +1,20 @@
+{
+  "note": "Exploratory, overlapping trades; small n and in-sample selection bias.",
+  "reentry_events": 21,
+  "first_week": {
+    "n": 18,
+    "winners": 7,
+    "average_ret": -0.002109906254122884
+  },
+  "after_first_week": {
+    "n": 3,
+    "winners": 1,
+    "average_ret": -0.033874024224635334
+  },
+  "one_sided_fisher_p_fast_has_higher_win_rate": 0.6842105263157895,
+  "mean_fast_minus_slow_ret": 0.03176411797051245,
+  "bootstrap_95pct_mean_diff_ci": [
+    -0.02881214189039791,
+    0.097469872225572
+  ]
+}

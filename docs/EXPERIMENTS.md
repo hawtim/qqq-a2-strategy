@@ -32,6 +32,8 @@
 | MA200 上方过远拒买 | >8%拒买 Payoff4.61/MDD−18.88%，但 CAGR5.28%，误杀 2020 +31.75%赢家；相邻10%/12%波动 | 同上 | 仅研究 |
 | MA20/50/60/61/62 | MA20/50 绩效更差；MA61恰好跳过2020假死叉并持有至2021，但可能是单案例 | `A2-N20_MA20_50_60_61_62_参数研究.md` | 原MA60保留 |
 | 保护期结束后每轮只允许一次快速重入 | 严格版 MDD 变 −26.09%，虽然CAGR6.36%；仍无法控制2000首次快速重入的大亏 | `A2-N20_每轮只重试一次_真实金叉敏感性.md` | 不采用 |
+| **RE-01：N20 止损价收复后买回**（2026-11-10） | 止损当天/其后收盘收复实际开盘卖价，下一开盘最多买回一次；2000—2026 延长样本 **21次快重入、8胜13负**，A2 CAGR **5.64%→4.75%**、MDD **−20.29%→−34.53%**；并测试不同收复价、等待天数、MA10确认 | [独立报告](research/A2-N20_止损价收复后重入_2026-11-10.md)、[汇总CSV](../research/results/price_reclaim_2026_11_10_to_2026-11-09/summary.csv)、[实验代码](../research/experiments/a2_n20_price_reclaim_study.py) | **不采用；RE-02 前置实验** |
+| **RE-02：止损价快速收复1—4周 × 第二次MA20/30/50退出**（2026-11-10） | 5/10/15/20日收复期限，重入仓额外MA20<30或MA20<50次日卖出，**再退出便不再重入**；1周版无额外退出 MDD−34.53%，MA30 **−33.57%**但2003年+34.06%赢家被截成+2.41%，MA50 MDD**−36.04%**；21次事件对“5日内更高胜率”Fisher **p=0.684**，无显著优势 | [完整独立报告](research/A2-N20_止损快速收复_第二次趋势退出_2026-11-10.md)、[全组合CSV](../research/results/reclaim_window_second_stop_2026_11_10/summary.csv)、[逐笔变化CSV](../research/results/reclaim_window_second_stop_2026_11_10/changed_reentries.csv)、[实验代码](../research/experiments/a2_n20_second_stop_windows.py) | **不采用；完整保留负面证据** |
 | 假死叉“两日等待” | 对MA20/60死叉进行短缓冲，个别假死叉获救但无法保证回撤 | `A2-N20_快速重入与假死叉缓冲_独立回测.md` | 仅研究 |
 | MA10/20缠绕距离与交叉次数 | 25次N20死叉中24次距离≤0.25 ATR，区分力不足；盲目延后2日 MDD变−26.3% | `A2-N20_TQQQ实测与MA10_20缠绕容错研究.md` | 不采用 |
 | 浮亏容忍1.55% | 可救2003部分时点，却在2001、2004、2008等代价显著且高度过拟合 | `A2-N20_亏损缓冲系数_独立实验.md` | 不采用 |
@@ -65,6 +67,7 @@
 - **2001/2004/2008/2015/2022 N20 救回**：不等待大概率后续反弹，实际止损与反事实差异在 `research/results/A2_N20_25_counterfactual.csv` 每笔可查。
 - **B不是安全版**：QQQ MDD反而由−20.29%到−20.90%；2010–25同期间 QQQ B Payoff 低于 A2；TQQQ B MDD 从−54.34%到−56.77%。
 - **2000合成首仓**：旧快重入“2020年以前的2000 +22.02%浮盈”不是严格 A2 的天然交易，不能为此调出一个完美止盈规则。
+- **RE-01/02 快速收复并非趋势恢复**：21次重新买入中13次在止损当天收复，却只有4次赚钱；在2001年更早的MA20/30、MA20/50退出反而比MA20/60亏得更多。不能把“均线退出更快”直接等同于“单笔亏损或账户MDD更低”。
 
 ## 四、复现：先跑原引擎，再跑候选
 
@@ -77,6 +80,12 @@ python research/validate_baseline.py
 python research/experiments/a2_n20_entry_quality_study.py
 python research/experiments/a2_shock_three_mechanisms.py
 python research/experiments/a2_b_two_day_rebound_event_study.py
+
+# RE-01/02：同一份合法自备、复权基准一致的完整2000—2026 QQQ日线
+PYTHONPATH=src python research/experiments/a2_n20_price_reclaim_study.py \
+  --merged sources/qqq_merged_updated_local.csv
+PYTHONPATH=src python research/experiments/a2_n20_second_stop_windows.py \
+  --merged sources/qqq_merged_updated_local.csv
 
 # 空仓现金生息对照：额外准备 sources/DGS3MO.csv，必须为历史每日序列
 python research/experiments/a2_cash_yield_backtest.py \
