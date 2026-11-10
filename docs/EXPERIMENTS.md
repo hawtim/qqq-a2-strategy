@@ -35,6 +35,7 @@
 | MA200切 QQQ/TQQQ | 2010–25 CAGR14.72%但MDD−51.67%；TQQQ全替代MDD−54.34% | `A2_MA200入场切换_单日5急跌保护_独立回测.md` | **另一个杠杆策略**，非V1.0 |
 | 周线MA5/10退出 | 提前退出伤害长期大赢家且整体未兼顾Payoff/MDD/CAGR | `A2-N20_周MA5MA10交叉_独立对照.md` | 不采用 |
 | 暴跌后收复80%就卖 | 基于独立全市场跌3%放量事件的研究；并非A2整账户规则，尚未验证其重新入场与资金曲线 | `QQQ_放量暴跌后反弹50到100的止盈机会_独立事件研究.md` | **独立研究，不并入** |
+| **空仓美元现金按短期美债历史浮动收益计息** | 58笔交易不变；历史 DGS3MO −15bp 后终值 **$576,562** vs 原 $450,596，CAGR **6.83%** vs **5.84%**；但 MDD **−20.33%** vs **−20.29%**，**没有降低** | [空仓美债现金收益独立回测](research/A2_空仓美债现金收益_独立回测_2026-11-10.md)、[六种场景 CSV](../research/results/a2_cash_yield_scenarios.csv) | **独立账户计息层，可影子跟踪；不改 V1.0 交易信号** |
 
 **为何多数候选不加入**：同一数据集被反复观察，指标改进可能来自2003/2020的少数边界事件。止盈通常减少部分回撤也会缩短少数盈利大单；更少交易不等于更低的账户 MDD；更早退出还会导致下一次无法及时恢复仓位。
 
@@ -59,6 +60,11 @@ python research/validate_baseline.py
 python research/experiments/a2_n20_entry_quality_study.py
 python research/experiments/a2_shock_three_mechanisms.py
 python research/experiments/a2_b_two_day_rebound_event_study.py
+
+# 空仓现金生息对照：额外准备 sources/DGS3MO.csv，必须为历史每日序列
+python research/experiments/a2_cash_yield_backtest.py \
+  --old sources/qqq_jtang.csv --new sources/qqq_james.csv \
+  --yield-csv sources/DGS3MO.csv
 ```
 
 这些较老的研究脚本保存其原研究目录相对路径和数据假设，部分脚本还依赖**未公开授权的 TQQQ 第三方日线**及前序产物，**并不保证新 clone 后所有实验零配置一键运行**；最先保证能运行的是 `qqq-a2` 稳定 A2 V1.0、单元测试、由授权行情重现冻结基准。旧报告属于**可审计档案**，绝不把欠缺的数据假装为仓库已提供。

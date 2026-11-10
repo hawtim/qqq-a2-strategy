@@ -7,17 +7,17 @@ A2 的核心不是猜顶抄底，而是：**MA20 新上穿 MA60 入场；入场�
 
 策略按 QQQ 日线收盘确认、**下一交易日开盘**成交。它只有约 **41.38%** 的历史胜率；历史优势来自较高的平均盈亏比，**不等于高胜率、保本或可直接加杠杆**。
 
-## 全部历史买点与卖点 · K 线总览
+## 全部历史买点与卖点 · 分期 K 线
 
-[![QQQ A2-N20 2000—2026 全部买点和卖点 K 线图](assets/a2_trade_map_2000_2026.svg)](assets/a2_trade_map_2000_2026.svg)
+[![QQQ A2-N20 2000—2026 七段 K 线与全部实际成交标记](assets/a2_trade_map_facets_2000_2026.svg)](assets/a2_trade_map_facets_2000_2026.svg)
 
-> **点击图片可放大**，查看完整的买入、N20 保护卖出、MA20/60 趋势卖出标记。为了让26年的交易放在**一张静态图**中，**底图将日线聚合成月 K**；**所有买卖信号仍使用真实日 K 计算，标记仍位于对应的实际交易日期与复权开盘价附近**（箭头仅作视觉偏移）。此图截至 **2026-07-13**，并非当前实时信号。逐笔精确值以 [58笔成交 CSV](research/results/A2_strict_58_trades.csv) 为准。
+> **点击图片可放大**。旧版全历史挤在一张坐标轴上的月 K 图很难辨认；现在分成**七个四年区间**，每段独立价格刻度，背景用**周 K** 提升清晰度。蓝色上三角是开仓，橙色下三角是 N20 保护退出，紫色下三角是 MA20/60 趋势退出，星号为期末仍未完成交易的买点。**59 次买入 / 58 次退出均按原始日线信号与次日开盘成交价定位；周 K 只用于画底图，不用于产生信号。**截止 **2026-07-13**，不是实时信号；精确记录以 [逐笔交易 CSV](research/results/A2_strict_58_trades.csv) 为准。
 
 这张图可完全离线重新生成，无需 HTML 或交互式网页：
 
 ```bash
 python -m pip install -e '.[charts]'
-python scripts/render_trade_chart.py --old sources/qqq_jtang.csv \
+python scripts/render_trade_chart_facets.py --old sources/qqq_jtang.csv \
   --new sources/qqq_james.csv --end 2026-07-13
 ```
 
@@ -89,6 +89,25 @@ python research/verify_frozen_baseline.py \
 
 > 这些是已看过全部历史的**样本内**结果，不是样本外证明；历史数据有分红与价格调整、开盘滑点、来源一致性等限制。仅凭 Payoff 高不能推断存在稳定超额收益。
 
+### A2 的空仓资金是否可以赚短期美债利息？
+
+**可以增加模拟期末资产，但不能据此推断降低 MDD。** 保持同一 58 笔交易、全部入出场日和单边 0.05% 股票交易费不变，只让 A2 空仓时的美元现金按 [FRED `DGS3MO` 历史 3 个月期美国国债恒定到期收益率](https://fred.stlouisfed.org/series/DGS3MO) 累积参考利息。回测覆盖 **2000-01-03 至 2026-07-13**；实际空仓日历天数约 **48.10%**，对应空仓时段的加权历史参考收益率约 **2.08%/年**。
+
+| 空仓现金方案 | $100k 期末权益 | CAGR | 每日权益最大回撤 |
+|---|---:|---:|---:|
+| **原 A2：现金 0%** | **$450,596** | **5.84%** | **−20.29%** |
+| 历史 DGS3MO 浮动参考收益（毛） | $587,708 | 6.91% | −20.28% |
+| **历史 DGS3MO 减 15bp/年模拟摩擦** | **$576,562** | **6.83%** | **−20.33%** |
+| 假设**永远固定** 2%/年（非历史产品） | $581,668 | 6.86% | −19.58% |
+| 假设**永远固定** 3%/年（非历史产品） | $660,867 | 7.38% | −19.23% |
+| 假设**永远固定** 4%/年（非历史产品） | $750,846 | 7.90% | −18.87% |
+
+[![A2-N20 空仓现金0%与历史3个月美债浮动收益净代理：账户权益和回撤曲线](assets/a2_cash_yield_equity.svg)](assets/a2_cash_yield_equity.svg)
+
+> **反直觉的反例**：减 15bp 的浮动参考方案让期末资金增加约 **$125,966**、CAGR 多 **0.99 个百分点**，但 MDD 由 −20.29% **略变差为 −20.33%**；因为累计利息同时改变每次历史权益高点，回撤是相对峰值计算的。**固定4% 26年是虚构利率路径**，不能当作稳健预期。上述 DGS3MO 不是可直接交易的资产净值；实际购买短债 ETF、滚动国库券、货币基金或定期存款，存在再投资利率、净值、成本、税费、资金可用时间和汇率等差异。
+
+方法、历史利率出处、权益计算公式、反例及复现命令详见 [空仓美债现金收益独立回测报告](docs/research/A2_空仓美债现金收益_独立回测_2026-11-10.md)。[六种场景对照 CSV](research/results/a2_cash_yield_scenarios.csv) · [月末权益派生 CSV](research/results/a2_cash_yield_monthly_equity.csv)。此结果**不修改 A2 V1.0 冻结交易规则**。
+
 ## 4. 数据与研究证据
 
 | 入口 | 内容 |
@@ -100,6 +119,7 @@ python research/verify_frozen_baseline.py \
 | [research/a2_n20.py](research/a2_n20.py) | 旧版独立研究引擎（基准复现） |
 | [research/verify_frozen_baseline.py](research/verify_frozen_baseline.py) | 对照冻结台账核验58笔交易逐笔一致性 |
 | [research/experiments/](research/experiments/) | 对比实验脚本；部分 TQQQ 实验需要私有/另行授权数据 |
+| [research/experiments/a2_cash_yield_backtest.py](research/experiments/a2_cash_yield_backtest.py) | 按历史浮动短债利率、固定假设利率回放空仓现金，并生成资产曲线 |
 | [src/qqq_a2/](src/qqq_a2/) | 可以对自备行情运行的 **只读**策略执行器/命令行 |
 
 **注意**：仓库不公开无明确再分发授权的原始 QQQ/TQQQ 行情、FirstRate Data 数据或账户敏感信息。公开统计结果与实验代码不等于附带数据本身的使用授权。

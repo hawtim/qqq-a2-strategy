@@ -11,6 +11,7 @@
 | 原 QQQ 回测讨论及分钟级资料 | 用户此前取得的 FirstRate Data（约从2000开始的 QQQ 1m/5m/30m/1h） | 仅提供研究方法；**不提供付费数据本体或自动镜像**。A2 V1.0 在本仓库仅需要**日 K** |
 | TQQQ 曾用于独立杠杆对照的开盘数据 | [Sunethan/backtesting/data/TQQQ.csv](https://github.com/Sunethan/backtesting/blob/main/data/TQQQ.csv)（2010–2021），[LucanLAM/VS_trading/TQQQ_Historical_Data.csv](https://github.com/LucanLAM/VS_trading/blob/main/TQQQ_Historical_Data.csv)（至2025） | **不分发原始文件**，单独读取各来源许可和质量 |
 | TQQQ 对照调整基准 | [holochart daily.json](https://github.com/holochart/holochart/blob/main/examples/demos/tqqq-soxl/data/daily.json) | 仅归档已生成的统计/实验记录，不分发原始序列 |
+| A2 空仓期间美元现金收益的历史参照 | [FRED DGS3MO](https://fred.stlouisfed.org/series/DGS3MO)：美联储 H.15 的 **3 个月期恒定到期美国国债收益率（investment basis）**，每个交易日报价、单位年化% | **只提交模型、派生账户权益与研究统计；不复制/再分发 FRED 原始序列**。研究本地快照见下方 |
 
 **版权和研究数据隔离**：公众可看实验脚本、方法、交易回报等**派生结果**，但不得从本仓库推断拥有任一上游原始数据的再分发权。`sources/*.csv`、`sources/*.json` 被 Git 忽略。研究使用数据与开源代码许可证分别处理。
 
@@ -57,14 +58,31 @@ python research/verify_frozen_baseline.py \
 
 ## 6. README 的交易总览图
 
-`assets/a2_trade_map_2000_2026.svg` 是**静态 SVG**，不包含 HTML/JS，使用者可以直接放大查看。其生成脚本为 `scripts/render_trade_chart.py`，使用本地已授权的两份 QQQ 原始 CSV 和固定的 A2-N20 V1.0 引擎：
+README 现在使用 `assets/a2_trade_map_facets_2000_2026.svg` 这张**分七段四年区间的静态 SVG**，无需 HTML/JS。早先的单张 26 年/月 K 方案 `assets/a2_trade_map_2000_2026.svg` 仍可保留作为实验档案，但密度太高，不再展示在 README。新版生成脚本为 `scripts/render_trade_chart_facets.py`，使用本地已授权的 QQQ 原始 CSV 和冻结 A2-N20 V1.0：
 
 ```bash
 python -m pip install -e '.[charts]'
-python scripts/render_trade_chart.py --old sources/qqq_jtang.csv \
+python scripts/render_trade_chart_facets.py --old sources/qqq_jtang.csv \
   --new sources/qqq_james.csv --end 2026-07-13
 ```
 
-图上**所有实际买卖日期和执行价格都来自日线模型**。只是出于 GitHub README 单图尺寸限制，背景蜡烛图按月聚合 OHLC；绝不能用图上的月 K 推算策略信号。入场为蓝色上三角，N20 保护卖出为橙色下三角，MA20/60 趋势卖出为紫色下三角，期末仍持仓的最后一个买点为星形。箭头在 y 方向略偏离成交价，通过连接线指回真实价格；精确成交价及退出原因应查完整交易 CSV。
+图上**所有实际买卖日期和执行价格都来自日线模型**。背景蜡烛图为**周 K**，每个四年区间采用独立价格刻度以方便辨认；绝不能用周 K 推算策略信号。入场为蓝色上三角，N20 保护卖出为橙色下三角，MA20/60 趋势卖出为紫色下三角，期末仍持仓的最后一个买点为星形。精确成交价及退出原因以完整交易 CSV 为准。
 
 公开 SVG 是对历史样本的**图形化派生展示**，没有附带任何第三方原始 OHLCV 下载包；上游许可与可能的数据修订限制仍适用。
+
+## 7. FRED DGS3MO 的来源、复现与可交易性限制
+
+2026-11-10 进行空仓现金收益独立研究时，以 FRED 官方指标 [DGS3MO](https://fred.stlouisfed.org/series/DGS3MO) 作为来源说明。实验机器使用的历史下载镜像快照为 `rasmuspeterk-ctrl/recession/v5/data/raw/2026-10-27/DGS3MO.csv`，文件 SHA-256 为 `5f795620cdc28b3a14d9e509ba1f3dc65704aa1aa45754a6d3fa2ba0279237e1`，记录覆盖 **1999-11-12 至 2026-10-23**。这不是对镜像仓库授权政策的背书；回测作者还与独立公开镜像的历史观测做了抽样比对。建议复现者优先从 FRED 自行获取原始 `DGS3MO.csv`，并保存下载日期、文件哈希和来源。
+
+`DGS3MO` 是参考**年化收益率报价**，不是银行/券商实际美元现金账户的到账收益，也不是某只 ETF 的真实总回报。以旧交易日可用的上次报价计息，排除未来利率窥视；最长回填间隔为十个日历日。动态短债收益减 `15bp` 的情景仅为模拟费用/摩擦假设，并不代表 SGOV、货币市场基金、券商账户或实际滚动国库券的历史费率。SGOV 直到2020年才推出，不能直接替代 2000 年起的现金仓位。
+
+生成曲线需要在本地准备 `sources/DGS3MO.csv`；执行：
+
+```bash
+python research/experiments/a2_cash_yield_backtest.py \
+  --old sources/qqq_jtang.csv --new sources/qqq_james.csv \
+  --yield-csv sources/DGS3MO.csv --end 2026-07-13 \
+  --outdir research/results --chart assets/a2_cash_yield_equity.svg
+```
+
+其**公开派生文件**分别为 `research/results/a2_cash_yield_scenarios.csv`（六种现金利率情景）与 `research/results/a2_cash_yield_monthly_equity.csv`（按月末抽样的模拟账户资产，不含第三方原始利率或 OHLCV 行情）。详细现金计息公式、MDD 反向案例及情景局限见 [独立研究报告](research/A2_空仓美债现金收益_独立回测_2026-11-10.md)。
