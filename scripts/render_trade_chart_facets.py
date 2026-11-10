@@ -1,8 +1,9 @@
-"""Seven readable weekly-candle panels, ALL daily A2 fills, one README SVG.
+"""Seven weekly-candle panels AND the complete daily-fill ledger in one SVG.
 
 Weekly OHLC is for DRAWING only; daily SMA triggers and next-day fills
 come from the frozen A2 backtester. Unlike a 26-year single strip, each
-panel has independent (clearly labelled) price scale and legible candles.
+panel has an independent price scale. The table below contains all 13
+published per-trade fields, derived from the *same* result as the markers.
 
   python scripts/render_trade_chart_facets.py --old sources/qqq_jtang.csv \
       --new sources/qqq_james.csv
@@ -34,6 +35,91 @@ def periods() -> list[tuple[str, str, str]]:
              f"{year}—{min(year + 3, 2026)}") for year in (2000, 2004, 2008, 2012, 2016, 2020, 2024)]
 
 
+def draw_trade_table(fig: plt.Figure, trades: pd.DataFrame, active: dict | None,
+                     *, latest: pd.Timestamp, table_height: float, fig_height: float) -> int:
+    """Append an exact 13-field executed-trades ledger using native SVG text.
+
+    No embedded HTML / foreignObject, no independent CSV manually transcribed
+    into the chart, and no hindsight-generated trade events. Native SVG text
+    is rendered as font paths so GitHub's inline image works without fonts.
+    """
+    columns = ["#", "入场信号", "买入日", "买入价¹", "出场信号", "卖出日",
+               "卖出价¹", "退出原因", "持有日", "净收益²", "MFE³", "MAE³", "卖后权益"]
+    widths = [.038, .085, .081, .075, .085, .081, .075, .129,
+              .049, .072, .065, .065, .101]
+
+    def percent(value: float) -> str:
+        return f"{float(value):+.2%}"
+
+    rows: list[list[str]] = []
+    for trade in trades.itertuples(index=False):
+        reason = ("N20 保护" if trade.exit_reason == "N20 protection"
+                  else "MA20/60 死叉" if trade.exit_reason == "MA20/60 death cross"
+                  else str(trade.exit_reason))
+        rows.append([
+            str(int(trade.id)), str(trade.entry_signal_date), str(trade.entry_date),
+            f"${float(trade.entry_price):,.2f}", str(trade.exit_signal_date),
+            str(trade.exit_date), f"${float(trade.exit_price):,.2f}", reason,
+            str(int(trade.hold_days)), percent(trade.ret_net),
+            percent(trade.mfe_close), percent(trade.mae_close),
+            f"${float(trade.equity_after_trade):,.0f}",
+        ])
+    if active:
+        # No fictional sale or P&L for a position still open at the sample end.
+        rows.append([
+            str(len(rows)+1), str(active["entry_signal_date"]),
+            str(active["entry_date"]), f"${float(active['entry_price']):,.2f}",
+            "—", "—", "—", "期末仍持仓", "—", "—", "—", "—", "—",
+        ])
+
+    fig.text(.075, (table_height+.50)/fig_height,
+             f"完整逐笔交易台账  |  {len(trades)} 笔已平仓"
+             + (" + 1 笔期末未平仓" if active else "  |  期末空仓"),
+             ha="left", fontsize=22, fontweight="bold", color=INK)
+    fig.text(.075, (table_height+.05)/fig_height,
+             "信号均于收盘后确认，下一常规交易日开盘成交；下表数据与上方买卖点来自同一次回测。",
+             fontsize=12, color="#607385")
+    table_ax = fig.add_axes([.075, 1.05/fig_height, .905,
+                             (table_height-1.55)/fig_height])
+    table_ax.set_axis_off()
+    table = table_ax.table(cellText=rows, colLabels=columns, colWidths=widths,
+                           bbox=[0, 0, 1, 1], cellLoc="center", colLoc="center")
+    table.auto_set_font_size(False)
+    table.set_fontsize(9.7)
+    for (row_i, col_i), cell in table.get_celld().items():
+        cell.set_edgecolor("#e1e8ef")
+        cell.set_linewidth(.42)
+        cell.PAD = .04
+        if row_i == 0:
+            cell.set_facecolor(INK)
+            cell.set_edgecolor("#ffffff")
+            cell.set_linewidth(.2)
+            cell.get_text().set_color("white")
+            cell.get_text().set_fontweight("bold")
+            cell.get_text().set_fontsize(10.0)
+        else:
+            cell.set_facecolor("#f3f7fa" if row_i % 2 == 0 else "#ffffff")
+            cell.get_text().set_color(INK)
+            if col_i == 0:
+                cell.get_text().set_fontweight("bold")
+            if col_i == 7:
+                kind = rows[row_i-1][7]
+                cell.get_text().set_color(AMBER if kind == "N20 保护" else VIOLET)
+                cell.get_text().set_fontweight("bold")
+            if col_i == 9 and rows[row_i-1][9] != "—":
+                profitable = float(trades.iloc[row_i-1].ret_net) > 0
+                cell.set_facecolor("#e4f3ea" if profitable else "#fde9e6")
+                cell.get_text().set_color("#196d49" if profitable else "#b4473b")
+                cell.get_text().set_fontweight("bold")
+    fig.text(.075, .40/fig_height,
+             "¹ 美元复权开盘成交价（非当年未复权报价）。"
+             "² 含买入/卖出各0.05%模拟费用的单笔净收益。"
+             "³ MFE/MAE 为持仓期最高/最低复权收盘价相对买价的浮盈/浮亏，不扣费。"
+             f"数据截止 {latest.date()}；所有历史账户权益均为模拟值。",
+             fontsize=10.5, color="#687c8d")
+    return len(rows)
+
+
 def render(data: pd.DataFrame, output: Path, preview: Path | None = None) -> dict:
     result = run_backtest(data, Config())
     trades = result["trades"]
@@ -52,7 +138,11 @@ def render(data: pd.DataFrame, output: Path, preview: Path | None = None) -> dic
     plt.rcParams.update({"font.family": [family, "DejaVu Sans"],
                          "svg.fonttype": "path", "axes.unicode_minus": False})
 
-    fig, axes = plt.subplots(len(periods()), 1, figsize=(18, 24.6))
+    # Keep the original seven K panels approximately the same physical height;
+    # grow the SVG downward rather than squeezing 60 rows over the candlesticks.
+    table_height = .305 * (len(trades) + 1 + int(bool(active))) + 1.5
+    fig_height = 24.6 + table_height
+    fig, axes = plt.subplots(len(periods()), 1, figsize=(18, fig_height))
     fig.patch.set_facecolor("white")
     for ax, (left, right, title) in zip(axes, periods()):
         lo_dt, hi_dt = pd.Timestamp(left), min(pd.Timestamp(right), latest)
@@ -119,12 +209,12 @@ def render(data: pd.DataFrame, output: Path, preview: Path | None = None) -> dic
                      loc="left", fontweight="bold", fontsize=18,
                      color=INK, pad=14)
 
-    fig.suptitle("QQQ A2-N20｜七段 K 线复盘，逐笔标记",
-                 x=.075, y=.990, ha="left", fontsize=27,
+    fig.suptitle("QQQ A2-N20｜七段 K 线 + 完整逐笔交易记录",
+                 x=.075, y=1-.28/fig_height, ha="left", fontsize=27,
                  fontweight="bold", color=INK)
     buys = len(trades) + int(bool(active))
     sells = len(trades)
-    fig.text(.075, .968,
+    fig.text(.075, 1-.92/fig_height,
              f"2000-01-03 — {latest.date()} · 七段周 K 仅用于清晰展示 · {buys} 次日线买入 / {sells} 次日线卖出"
              + (" · 期末1笔未平仓" if active else " · 期末空仓") + " · 每段纵轴独立",
              color="#607385", fontsize=13)
@@ -140,25 +230,23 @@ def render(data: pd.DataFrame, output: Path, preview: Path | None = None) -> dic
         keys.append(Line2D([0], [0], marker="*", linestyle="None", markersize=13,
                            markerfacecolor=BLUE, markeredgecolor="white", label="期末未平仓买入"))
     fig.legend(handles=keys, ncol=len(keys), frameon=False, fontsize=12,
-               bbox_to_anchor=(.075, .951), loc="upper left")
-    ledger = ("research/results/A2_strict_58_trades.csv" if latest <= pd.Timestamp("2026-07-13")
-              else "research/results/A2_current_trades_to_2026_11_09.csv")
-    fig.text(.075, .014,
-             "图上 K 线按周聚合，但 A2 只在日线收盘判定，次日开盘成交。箭头略移位避免遮挡；"
-             f"精确日期、成交价、收益见 {ledger}。",
-             color="#687c8d", fontsize=11)
-    # Reserve a separate row for the legend; never overlap first-panel title.
-    fig.subplots_adjust(left=.075, right=.98, top=.904, bottom=.035, hspace=.61)
+               bbox_to_anchor=(.075, 1-1.40/fig_height), loc="upper left")
+    # Exact physical spacing: the table occupies its own lower section.
+    fig.subplots_adjust(left=.075, right=.98, top=1-2.35/fig_height,
+                        bottom=(table_height+1.2)/fig_height, hspace=.61)
+    table_rows = draw_trade_table(fig, trades, active, latest=latest,
+                                  table_height=table_height, fig_height=fig_height)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, format="svg", metadata={
-        "Title": "QQQ A2-N20 all trading signals in seven weekly-candle panels",
-        "Description": f"All {buys} daily entries and {sells} daily exits, weekly OHLC for display only, cutoff {latest.date()}.",
+        "Title": "QQQ A2-N20 seven K-line panels and all 13 fields for every executed trade",
+        "Description": f"All {buys} daily entries, {sells} daily exits, and {table_rows} ledger rows, weekly OHLC for display only, cutoff {latest.date()}.",
     })
     if preview:
         preview.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(preview, format="png", dpi=80)
     plt.close(fig)
-    return {"buys": buys, "sells": sells, "asof": str(latest.date()),
+    return {"buys": buys, "sells": sells, "table_rows": table_rows,
+            "asof": str(latest.date()),
             "active_at_end": bool(active),
             "n20": int((trades.exit_reason == "N20 protection").sum())}
 
