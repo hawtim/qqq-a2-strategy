@@ -1,0 +1,15 @@
+{
+  "data_asof": "2026-11-09",
+  "source_sha256": "2e0f003b81d46ab432b303d63ede8c768adfe59fcd3d44ecb9540875d0c80e9c",
+  "simulation_start": "2000-01-03",
+  "initial_cash_usd": 100000,
+  "single_side_fee": 0.0005,
+  "cash_interest": 0,
+  "mark_price": "same adjustment base OHLC, daily adjusted close",
+  "fills": "signals at complete daily close, orders at next regular open",
+  "stop7": "net round-trip return reaches -7% at daily close; sell next open; gaps can exceed 7%",
+  "dividends": "adjusted total-return approximation, gross of withholding",
+  "buy_hold": "first adjusted open, initial fee paid, no sale/exit fee at end",
+  "taxes_and_slippage": "excluded",
+  "lookahead": "none"
+}
