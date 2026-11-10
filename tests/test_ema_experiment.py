@@ -11,10 +11,28 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "research/experiments"))
 
 from a2_ema_comparison import ema_signals, replay_signals, validate_sma_against_frozen
+from qqq_a2.benchmarks import buy_and_hold
 from qqq_a2.engine import Config
 
 
 class EmaExperimentTests(unittest.TestCase):
+    def test_buy_and_hold_is_unsold_and_uses_same_initial_fee(self):
+        dates = pd.bdate_range("2024-01-02", periods=4)
+        frame = pd.DataFrame({
+            "Date": dates,
+            "adj_open": [100.0, 95.0, 105.0, 100.0],
+            "adj_close": [100.0, 90.0, 110.0, 100.0],
+        })
+        result = buy_and_hold(frame, Config(start_date="2024-01-02"))
+        stats = result["stats"]
+        self.assertAlmostEqual(stats["end_equity"], 100000 / 1.0005)
+        self.assertAlmostEqual(stats["mdd"], -0.10)
+        self.assertFalse(stats["exit_fee_assessed"])
+        self.assertAlmostEqual(
+            stats["end_equity_if_sold_at_last_close_and_paid_exit_fee"],
+            stats["end_equity"] * 0.9995,
+        )
+
     def test_ema_is_recursive_and_requires_full_period(self):
         close = [100.0] * 10 + [110.0, 90.0] + [100.0] * 210
         frame = pd.DataFrame({"Date": pd.bdate_range("2023-01-02", periods=len(close)),

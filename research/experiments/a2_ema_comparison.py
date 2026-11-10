@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from qqq_a2.engine import Config, compute_signals, load_adjusted_csv, run_backtest
+from qqq_a2.benchmarks import buy_and_hold
 
 
 def ema_signals(data: pd.DataFrame) -> pd.DataFrame:
@@ -154,14 +155,14 @@ def validate_sma_against_frozen(data: pd.DataFrame, config: Config) -> dict:
     return replay
 
 
-def draw_svg(sma: dict, ema: dict, output: Path) -> None:
+def draw_svg(sma: dict, ema: dict, hold: dict, output: Path) -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
 
-    fig, (ax, ax2) = plt.subplots(2, 1, figsize=(12, 7.5), sharex=True,
-                                 gridspec_kw={"height_ratios": [3, 1.5]})
+    fig, (ax, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 9.2), sharex=True,
+                                 gridspec_kw={"height_ratios": [3, 1.35, 1.0]})
     colors = {"SMA A2-N20": "#275dad", "EMA A2-N20": "#da6b21"}
     for label, result in (("SMA A2-N20", sma), ("EMA A2-N20", ema)):
         eq = result["equity"]
@@ -175,18 +176,31 @@ def draw_svg(sma: dict, ema: dict, output: Path) -> None:
         trough = eq.loc[eq.Drawdown.idxmin()]
         ax2.scatter(pd.Timestamp(trough.Date), trough.Drawdown * 100,
                     color=colors[label], marker="x", s=45, zorder=5)
+    hold_equity = hold["equity"]
+    hold_shown = hold_equity.groupby(
+        pd.to_datetime(hold_equity.Date).dt.to_period("W-FRI"), sort=True
+    ).tail(1)
+    ax.plot(pd.to_datetime(hold_shown.Date), hold_shown.Equity,
+            label="QQQ Buy & Hold (unsold)", color="#16816c", linewidth=1.7)
+    ax3.plot(pd.to_datetime(hold_shown.Date), hold_shown.Drawdown * 100,
+             color="#16816c", linewidth=1.25)
+    hold_trough = hold_equity.loc[hold_equity.Drawdown.idxmin()]
+    ax3.scatter(pd.Timestamp(hold_trough.Date), hold_trough.Drawdown * 100,
+                color="#16816c", marker="x", s=45, zorder=5)
     ax.set_yscale("log")
     last_day = ema["equity"].Date.iloc[-1]
-    ax.set_title(f"QQQ A2-N20  |  SMA vs EMA  |  2000-01-03 to {last_day}", fontsize=14)
+    ax.set_title(f"QQQ A2-N20  |  SMA vs EMA vs Buy & Hold  |  2000-01-03 to {last_day}", fontsize=14)
     ax.set_ylabel("Portfolio value (USD, log scale)")
     ax.grid(alpha=.20)
     ax.legend(loc="upper left")
     ax2.set_ylabel("Drawdown (%)")
-    ax2.set_xlabel("Calendar year")
-    ax2.xaxis.set_major_locator(mdates.YearLocator(3))
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax2.set_xlim(pd.Timestamp("2000-01-03"), pd.Timestamp(last_day))
+    ax3.set_ylabel("Buy & Hold DD (%)")
+    ax3.set_xlabel("Calendar year")
+    ax3.xaxis.set_major_locator(mdates.YearLocator(3))
+    ax3.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax3.set_xlim(pd.Timestamp("2000-01-03"), pd.Timestamp(last_day))
     ax2.grid(alpha=.20)
+    ax3.grid(alpha=.20)
     fig.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, format="svg", metadata={"Date": "2026-11-10"})
@@ -210,14 +224,21 @@ def main() -> None:
     config = Config()
     sma = validate_sma_against_frozen(data, config)
     ema = replay_signals(ema_signals(data), config)
+    hold = buy_and_hold(data, config)
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     summary = []
     for name, result in (("SMA_A2_N20", sma), ("EMA_A2_N20", ema)):
         summary.append({"strategy": name, "data_asof": args.end,
                         **{k: v for k, v in result["stats"].items()
-                           if k != "pending_order_at_end"}})
+                           if k != "pending_order_at_end"},
+                        "terminal_sale_fee_included": True})
         result["trades"].to_csv(args.outdir / f"{name}_trades.csv", index=False)
+    summary.append({"strategy": "QQQ_Buy_and_Hold", "data_asof": args.end,
+                    "completed_trades": 0, "end_equity": hold["stats"]["end_equity"],
+                    "cagr": hold["stats"]["cagr"], "mdd": hold["stats"]["mdd"],
+                    "exposure": 1.0, "active_position_at_end": True,
+                    "terminal_sale_fee_included": False})
     pd.DataFrame(summary).to_csv(args.outdir / "summary.csv", index=False)
 
     frames = []
@@ -225,11 +246,17 @@ def main() -> None:
         temp = result["equity"].copy()
         temp["strategy"] = name
         frames.append(temp)
+    hold_frame = hold["equity"][["Date", "Equity", "Drawdown"]].copy()
+    hold_frame["Date"] = hold_frame.Date.dt.strftime("%Y-%m-%d")
+    hold_frame["Invested"] = True
+    hold_frame["Pending"] = ""
+    hold_frame["strategy"] = "QQQ_Buy_and_Hold"
+    frames.append(hold_frame)
     pd.concat(frames).assign(YearMonth=lambda x: x.Date.str[:7]).groupby(
         ["strategy", "YearMonth"], sort=True
     ).tail(1).to_csv(args.outdir / "monthly_equity.csv", index=False)
 
-    draw_svg(sma, ema, args.chart)
+    draw_svg(sma, ema, hold, args.chart)
     for row in summary:
         print(row)
     print(f"Source bars: {len(data)}, from {data.Date.iloc[0].date()} to {data.Date.iloc[-1].date()}")
