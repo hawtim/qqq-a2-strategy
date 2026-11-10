@@ -40,7 +40,7 @@ def replay_guarded(
     mode: str = "close_next_open",
     slippage_bps: float = 0.0,
 ) -> dict:
-    """Retain EMA/N20 entry/exit state machine; add an always-on 8% exit.
+    """Retain EMA/N20 entry/exit state machine; add an always-on loss exit.
 
     ``close_next_open`` uses only observed completed closes and fills the next
     open, exactly like N20. ``intraday_gap_aware`` simulates a stop-market
@@ -49,6 +49,8 @@ def replay_guarded(
     Close-only EMA/N20 exits pending from the prior day execute at today's open
     before any intraday hard-stop simulation.
     """
+    if not 0 < stop_loss < 1:
+        raise ValueError("Stop must be between zero and 100%")
     if mode not in {"close_next_open", "intraday_gap_aware"}:
         raise ValueError("Unsupported execution model")
     if not 0 <= slippage_bps < 10000:
@@ -56,6 +58,7 @@ def replay_guarded(
     if mode == "intraday_gap_aware" and "adj_low" not in signals.columns:
         raise ValueError("Intraday variant requires adjusted Low")
 
+    stop_label = f"{stop_loss * 100:g}%"
     df = signals.sort_values("Date").reset_index(drop=True)
     cash, shares = float(config.initial_cash), 0.0
     position, pending = None, None
@@ -132,7 +135,8 @@ def replay_guarded(
                 position["min_low"] = min(position["min_low"], float(bar.adj_low))
                 cash = sell(position, shares, px=stop_fill, i=int(i),
                             exit_date=day, signal_date=day,
-                            reason="8% intraday stop (gap)" if gap else "8% intraday stop",
+                            reason=f"{stop_label} intraday stop (gap)" if gap
+                                   else f"{stop_label} intraday stop",
                             gap_past_stop=gap)
                 shares, position = 0.0, None
             else:
@@ -148,9 +152,9 @@ def replay_guarded(
                 # Simultaneous close signals execute at the identical next
                 # open; record ties explicitly, without assuming within-bar order.
                 if hard_stop_close:
-                    reason = ("8% close stop + trend tie" if bool(bar.death)
-                              else "8% close stop + N20 tie" if n20
-                              else "8% close stop")
+                    reason = (f"{stop_label} close stop + trend tie" if bool(bar.death)
+                              else f"{stop_label} close stop + N20 tie" if n20
+                              else f"{stop_label} close stop")
                     pending = {"side": "sell", "signal_date": day, "reason": reason}
                 elif bool(bar.death):
                     pending = {"side": "sell", "signal_date": day,
@@ -171,7 +175,7 @@ def replay_guarded(
     e["Drawdown"] = e.Equity / e.Equity.cummax() - 1
     years = (pd.Timestamp(e.Date.iloc[-1]) - pd.Timestamp(config.start_date)).days / 365.25
     winners, losers = t[t.ret_net > 0], t[t.ret_net < 0]
-    hard_stops = t.exit_reason.str.startswith("8%")
+    hard_stops = t.exit_reason.str.startswith(stop_label)
     stats = {
         "completed_trades": len(t),
         "wins": len(winners), "losses": len(losers),
