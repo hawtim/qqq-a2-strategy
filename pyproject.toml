@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qqq-a2-strategy"
+version = "1.0.0"
+description = "Reproducible QQQ A2-N20 daily trend-following research and read-only signals"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pandas>=2.0,<3", "numpy>=1.24,<3"]
+classifiers = ["Programming Language :: Python :: 3", "Topic :: Scientific/Engineering :: Information Analysis"]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.5"]
+
+[project.scripts]
+qqq-a2 = "qqq_a2.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
