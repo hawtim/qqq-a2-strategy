@@ -7,6 +7,20 @@ A2 的核心不是猜顶抄底，而是：**MA20 新上穿 MA60 入场；入场�
 
 策略按 QQQ 日线收盘确认、**下一交易日开盘**成交。它只有约 **41.38%** 的历史胜率；历史优势来自较高的平均盈亏比，**不等于高胜率、保本或可直接加杠杆**。
 
+## 全部历史买点与卖点 · K 线总览
+
+[![QQQ A2-N20 2000—2026 全部买点和卖点 K 线图](assets/a2_trade_map_2000_2026.svg)](assets/a2_trade_map_2000_2026.svg)
+
+> **点击图片可放大**，查看完整的买入、N20 保护卖出、MA20/60 趋势卖出标记。为了让26年的交易放在**一张静态图**中，**底图将日线聚合成月 K**；**所有买卖信号仍使用真实日 K 计算，标记仍位于对应的实际交易日期与复权开盘价附近**（箭头仅作视觉偏移）。此图截至 **2026-07-13**，并非当前实时信号。逐笔精确值以 [58笔成交 CSV](research/results/A2_strict_58_trades.csv) 为准。
+
+这张图可完全离线重新生成，无需 HTML 或交互式网页：
+
+```bash
+python -m pip install -e '.[charts]'
+python scripts/render_trade_chart.py --old sources/qqq_jtang.csv \
+  --new sources/qqq_james.csv --end 2026-07-13
+```
+
 ## 1. 运行
 
 环境：Python 3.10+。

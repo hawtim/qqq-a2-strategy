@@ -54,3 +54,17 @@ python research/verify_frozen_baseline.py \
 ## 5. 研究结果的限制
 
 本仓库的所有回测均为历史**样本内**，多轮参数搜索会提高过拟合风险；同一市场暴跌周期内的多个事件高度相关。这里展示的盈亏比、最大回撤、CAGR 和未来走势统计都不是对未来交易的保证，也不是针对当前市场的实时交易建议。
+
+## 6. README 的交易总览图
+
+`assets/a2_trade_map_2000_2026.svg` 是**静态 SVG**，不包含 HTML/JS，使用者可以直接放大查看。其生成脚本为 `scripts/render_trade_chart.py`，使用本地已授权的两份 QQQ 原始 CSV 和固定的 A2-N20 V1.0 引擎：
+
+```bash
+python -m pip install -e '.[charts]'
+python scripts/render_trade_chart.py --old sources/qqq_jtang.csv \
+  --new sources/qqq_james.csv --end 2026-07-13
+```
+
+图上**所有实际买卖日期和执行价格都来自日线模型**。只是出于 GitHub README 单图尺寸限制，背景蜡烛图按月聚合 OHLC；绝不能用图上的月 K 推算策略信号。入场为蓝色上三角，N20 保护卖出为橙色下三角，MA20/60 趋势卖出为紫色下三角，期末仍持仓的最后一个买点为星形。箭头在 y 方向略偏离成交价，通过连接线指回真实价格；精确成交价及退出原因应查完整交易 CSV。
+
+公开 SVG 是对历史样本的**图形化派生展示**，没有附带任何第三方原始 OHLCV 下载包；上游许可与可能的数据修订限制仍适用。
