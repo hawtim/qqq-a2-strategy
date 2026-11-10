@@ -1,0 +1,26 @@
+{
+  "data_asof": "2026-11-09",
+  "source_sha256": "2e0f003b81d46ab432b303d63ede8c768adfe59fcd3d44ecb9540875d0c80e9c",
+  "comparison": [
+    "SMA_A2_N20",
+    "EMA_A2_N20_close7",
+    "EMA_A2_DynamicN20_monthEMA5_close7",
+    "QQQ_buy_hold"
+  ],
+  "simulation_start": "2000-01-03",
+  "initial_cash_usd": 100000,
+  "fee_per_side": 0.0005,
+  "cash_interest": 0,
+  "signal_timing": "completed daily close; monthly EMA5 previous completed month only",
+  "fill": "next regular trading session adjusted open",
+  "fast_entry": "fresh EMA10/20 gold after ANY exit, last completed month EMA5 slope > 0",
+  "normal_entry": "fresh daily EMA20/60 gold, irrespective of monthly filter",
+  "dynamic_n20": "for fast entries: EMA10/20 fresh death below buy open until EMA20/60 fresh gold, then 20 further trading days; regular entries original N20",
+  "exit_priority": "7% net-loss daily close, EMA20/60 death, losing N20 cross; next open",
+  "published_confirmation_closes": 1,
+  "slippage_and_tax": "excluded",
+  "cash_yield": "0%",
+  "external_validation": "none; all results in-sample",
+  "reentry_eligibility": "any completed exit incl. 7%, EMA20/60 and N20",
+  "signal_audit_changed_exits": 1
+}
