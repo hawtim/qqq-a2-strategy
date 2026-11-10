@@ -32,6 +32,27 @@ A2 的核心不是猜顶抄底，而是：**MA20 新上穿 MA60 入场；入场�
 
 11月9日 QQQ 未复权收盘价 **$679.35**；按本次复权序列计算的 MA10/20/60/200 分别约 **689.35 / 704.30 / 719.12 / 680.09**。**11月3日虽然出现 MA20/60 死叉，但模型早已空仓，这一天不是一笔额外卖单。** [补样审计报告](docs/research/A2_2026_07_14到11_09_样本扩展复核.md) · [全部60笔交易](research/results/A2_current_trades_to_2026_11_09.csv) · [新增两笔](research/results/A2_newly_completed_trades_2026_07_14_to_11_09.csv) · [新时期每日权益](research/results/A2_forward_daily_equity_2026_07_14_to_11_09.csv) · [信号事件](research/results/A2_forward_signal_events_2026_07_14_to_11_09.csv) · [审计元数据](research/results/A2_forward_update_to_2026_11_09.json)。
 
+## 同一起点的买入并持有基准｜收益高，不代表回撤可承受
+
+**将“尽可能大的长期回报”和“人能够坚持执行的最大回撤”一起作为研究目标。** 严格核对 2000-01-03 同日首开、$100,000、复权日线及首次 0.05% 交易费后，QQQ 买入持有的数据如下。A2 冻结版仍单独保留，不因新数据更新改写历史。
+
+| 策略和指标 | 2000-01-03 — **2026-07-13** 冻结样本 | 2000-01-03 — **2026-11-09** 更新样本 |
+|---|---:|---:|
+| **A2-N20** $100k 终值 | $450,596 | $436,163 |
+| **QQQ 买入并持有** $100k 终值 | **$877,700** | **$838,629** |
+| A2 累计收益 / CAGR | +350.60% / 5.84% | +336.16% / 5.64% |
+| **买入持有累计收益 / CAGR** | **+777.70% / 8.53%** | **+738.63% / 8.24%** |
+| **A2 账户最大回撤 MDD** | **−20.29%** | **−20.29%** |
+| QQQ 买入持有最大回撤 MDD | **−82.96%** | **−82.96%** |
+
+[![2000—2026 A2-N20 与买入持有账户总资产及日度回撤对照](assets/a2_vs_buy_hold_equity_drawdown.svg)](assets/a2_vs_buy_hold_equity_drawdown.svg)
+
+**−82.96% 回撤之后，要上涨约 487% 才能回本。** 这段真实历史峰值出现在 2000-03-27，低谷在 2002-10-09，复权账户直到 **2015-02-20** 才收复前高，水下约 **14.9 年**。买入并持有终值是 A2 的近两倍，但能否承受长期水下、是否会在最差时期卖出，都是投资结果的一部分。**A2 历史 −20.29% 不是未来最大损失保证**；它也牺牲了约 2.6 个百分点的长期税前 CAGR，下一轮要继续研究这个权衡。
+
+**税务未包含在上表**：买入通常不产生已实现资本利得，但股票价差是否在卖出时纳税取决于个人**税务居民地**；即使一直不卖，QQQ 持有期间的分红仍可能发生美国预扣税。A2 多次平仓可能提前实现应税损益，Buy&Hold 通常延迟资本利得实现，但**不能**假定每个人最终一定要缴相同税率。复权收盘价只是**税前毛分红复投代理**，不是税后券商净值。中国税务居民的境外财产转让/股息分类所得、新加坡个人投资的一般免税待遇、美国非居民股息与价差分开的官方口径见[完整基准与税务报告](docs/research/A2_QQQ买入持有基准_回撤与税务口径_2026-11-10.md)。
+
+[独立基准结果 JSON](research/results/a2_vs_buy_hold_2026_07_13_and_11_09.json) · [月末账户资产/回撤 CSV](research/results/a2_vs_buy_hold_monthly_equity.csv) · [复现程序](research/experiments/a2_buy_hold_benchmark.py)。图按月末绘制以保持清晰，MDD 与 CAGR **按完整日线**计算；截止日 B&H 仍持仓，未扣假设的最终卖出费和个人税。
+
 ## 全部历史买点与卖点 · 分期 K 线
 
 [![QQQ A2-N20 2000—2026 七段 K 线与全部实际成交标记](assets/a2_trade_map_facets_2000_2026.svg)](assets/a2_trade_map_facets_2000_2026.svg)
@@ -77,6 +98,11 @@ python research/experiments/a2_forward_update.py \
 # 用补全后的每日 QQQ 历史重新计算当期状态
 qqq-a2 --csv sources/qqq_merged_updated_local.csv \
   --start 2000-01-03 --end 2026-11-09 --out .a2-output
+
+# 与同起点 QQQ 买入并持有核对收益、日度 MDD 与历史最长水下期，生成静态对比图
+python research/experiments/a2_buy_hold_benchmark.py \
+  --old sources/qqq_jtang.csv --new sources/qqq_james.csv \
+  --csv sources/qqq_merged_updated_local.csv
 
 # 包含动态短端利率的空仓现金回放与图表（需要本地另外下载 DGS3MO）
 python research/experiments/a2_cash_yield_backtest.py \
@@ -176,6 +202,7 @@ python research/experiments/a2_cash_yield_backtest.py \
 | [research/verify_frozen_baseline.py](research/verify_frozen_baseline.py) | 对照冻结台账核验58笔交易逐笔一致性 |
 | [research/experiments/](research/experiments/) | 对比实验脚本；部分 TQQQ 实验需要私有/另行授权数据 |
 | [research/experiments/a2_cash_yield_backtest.py](research/experiments/a2_cash_yield_backtest.py) | 按历史浮动短债利率、固定假设利率回放空仓现金，并生成资产曲线 |
+| [research/experiments/a2_buy_hold_benchmark.py](research/experiments/a2_buy_hold_benchmark.py) | 同一起点的独立 Buy&Hold 对照，输出两段结果、权益/MDD 图及税前口径说明 |
 | [research/experiments/a2_forward_update.py](research/experiments/a2_forward_update.py) | 校验新旧来源重叠/分红复权后，补齐完整日 K 并要求冻结58笔回测逐笔不变 |
 | [src/qqq_a2/](src/qqq_a2/) | 可以对自备行情运行的 **只读**策略执行器/命令行 |
 

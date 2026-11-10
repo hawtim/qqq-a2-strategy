@@ -1,0 +1,88 @@
+{
+  "frozen_2026_07_13": {
+    "end_date": "2026-07-13",
+    "sessions": 6670,
+    "a2": {
+      "completed_trades": 58,
+      "end_equity": 450595.8505036286,
+      "total_return": 3.5059585050362863,
+      "cagr": 0.05839703316527567,
+      "mdd": -0.2028819139814283,
+      "active_position_at_end": true
+    },
+    "buy_and_hold": {
+      "start_date": "2000-01-03",
+      "end_date": "2026-07-13",
+      "initial_cash": 100000.0,
+      "entry_adjusted_open": 81.05094426343163,
+      "entry_fee_per_side": 0.0005,
+      "exit_fee_assessed": false,
+      "end_equity": 877700.1974695503,
+      "total_return": 7.777001974695503,
+      "cagr": 0.08533887507795246,
+      "mdd": -0.8296390988830602,
+      "mdd_peak_date": "2000-03-27",
+      "mdd_trough_date": "2002-10-09",
+      "mdd_recovery_date": "2015-02-20",
+      "mdd_underwater_years": 14.902121834360027,
+      "mdd_recovery_return_needed": 4.86989146831042,
+      "end_equity_if_sold_at_last_close_and_paid_exit_fee": 877261.3473708156,
+      "taxes": "not modeled; adjusted close is gross-dividend total-return proxy"
+    },
+    "assumptions": {
+      "simulation_start": "2000-01-03",
+      "first_entry": "first regular session adjusted open",
+      "initial_cash": 100000.0,
+      "entry_fee_per_side": 0.0005,
+      "mark_to_market": "daily adjusted close, no terminal sale",
+      "adjusted_price": "dividends reinvested gross total-return approximation",
+      "personal_capital_gains_tax": "excluded: residency-dependent",
+      "dividend_withholding_tax": "excluded: nonresident US dividend tax may apply",
+      "tax_deferred_compounding": "not included; selling after cutoff is separate"
+    }
+  },
+  "updated_2026_11_09": {
+    "end_date": "2026-11-09",
+    "sessions": 6754,
+    "a2": {
+      "completed_trades": 60,
+      "end_equity": 436162.71957104246,
+      "total_return": 3.3616271957104242,
+      "cagr": 0.05638675130089377,
+      "mdd": -0.2028819139814283,
+      "active_position_at_end": false
+    },
+    "buy_and_hold": {
+      "start_date": "2000-01-03",
+      "end_date": "2026-11-09",
+      "initial_cash": 100000.0,
+      "entry_adjusted_open": 80.9667279323205,
+      "entry_fee_per_side": 0.0005,
+      "exit_fee_assessed": false,
+      "end_equity": 838629.0419444931,
+      "total_return": 7.386290419444931,
+      "cagr": 0.08242361250102959,
+      "mdd": -0.8296390988830602,
+      "mdd_peak_date": "2000-03-27",
+      "mdd_trough_date": "2002-10-09",
+      "mdd_recovery_date": "2015-02-20",
+      "mdd_underwater_years": 14.902121834360027,
+      "mdd_recovery_return_needed": 4.86989146831042,
+      "end_equity_if_sold_at_last_close_and_paid_exit_fee": 838209.7274235209,
+      "taxes": "not modeled; adjusted close is gross-dividend total-return proxy"
+    },
+    "assumptions": {
+      "simulation_start": "2000-01-03",
+      "first_entry": "first regular session adjusted open",
+      "initial_cash": 100000.0,
+      "entry_fee_per_side": 0.0005,
+      "mark_to_market": "daily adjusted close, no terminal sale",
+      "adjusted_price": "dividends reinvested gross total-return approximation",
+      "personal_capital_gains_tax": "excluded: residency-dependent",
+      "dividend_withholding_tax": "excluded: nonresident US dividend tax may apply",
+      "tax_deferred_compounding": "not included; selling after cutoff is separate"
+    }
+  },
+  "research_asof": "2026-11-10",
+  "benchmark": "independent QQQ buy-and-hold"
+}
