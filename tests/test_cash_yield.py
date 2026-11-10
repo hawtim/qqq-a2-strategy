@@ -3,10 +3,21 @@ import unittest
 
 import pandas as pd
 
-from qqq_a2.cash_yield import cash_overlay
+from qqq_a2.cash_yield import append_rate_quotes, cash_overlay
 
 
 class CashCarryTests(unittest.TestCase):
+    def test_rate_extension_rejects_conflicting_revisions(self):
+        old = pd.DataFrame({"Date": pd.to_datetime(["2026-11-02"]), "RatePct": [4.21]})
+        new = pd.DataFrame({"Date": pd.to_datetime(["2026-11-02", "2026-11-03"]),
+                            "RatePct": [4.21, 4.20]})
+        combined = append_rate_quotes(old, new)
+        self.assertEqual(len(combined), 2)
+        self.assertAlmostEqual(combined.RatePct.iloc[-1], 4.20)
+        new.loc[0, "RatePct"] = 4.22
+        with self.assertRaisesRegex(ValueError, "disagree"):
+            append_rate_quotes(old, new)
+
     def test_cash_receives_calendar_weekend_interest(self):
         c = pd.DataFrame({"Date": ["2024-01-05", "2024-01-08"],
                           "Equity": [100.0, 100.0], "Invested": [False, False]})

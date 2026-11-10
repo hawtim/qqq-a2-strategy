@@ -25,6 +25,19 @@ def read_yield_csv(path: str) -> pd.DataFrame:
     return out
 
 
+def append_rate_quotes(earlier: pd.DataFrame, additional: pd.DataFrame) -> pd.DataFrame:
+    """Extend archived rate history; reject mismatched overlapping observations."""
+    old, new = earlier.copy(), additional.copy()
+    both = old.merge(new, on="Date", suffixes=("_old", "_new"))
+    if (both.RatePct_old - both.RatePct_new).abs().gt(1e-9).any():
+        raise ValueError("Overlapping treasury yield quotes disagree")
+    later = new[~new.Date.isin(old.Date)]
+    combined = pd.concat([old, later], ignore_index=True).sort_values("Date").reset_index(drop=True)
+    if combined.Date.duplicated().any():
+        raise ValueError("Duplicated dates in combined treasury yield history")
+    return combined
+
+
 def align_previous_quote(curve: pd.DataFrame, yields: pd.DataFrame) -> pd.Series:
     """Yield known on prior completed QQQ session; no future rate used."""
     dates = pd.DataFrame({"Date": pd.to_datetime(curve.Date)}).reset_index(drop=True)

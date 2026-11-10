@@ -1,0 +1,91 @@
+{
+  "purpose": "A2-N20 unchanged rule, new daily observations only",
+  "frozen": {
+    "stats": {
+      "completed_trades": 58,
+      "wins": 24,
+      "losses": 34,
+      "win_rate": 0.41379310344827586,
+      "payoff_ratio": 4.0168235353073145,
+      "profit_factor": 2.8354048484522214,
+      "mdd": -0.2028819139814283,
+      "end_equity": 450595.8505036286,
+      "cagr": 0.05839703316527567,
+      "active_position_at_end": true,
+      "pending_order_at_end": null
+    },
+    "last_completed_date": "2026-07-13",
+    "open_position": {
+      "entry_signal_date": "2026-04-22",
+      "entry_date": "2026-04-23",
+      "entry_index": 6822,
+      "entry_price": 652.8325618141057,
+      "entry_cost": 413508.76638082846,
+      "max_close": 745.340881,
+      "min_close": 650.704895
+    },
+    "pending_order_at_close": null,
+    "last_indicators": {
+      "ma10": 720.2470031,
+      "ma20": 722.09520875,
+      "ma60": 705.1250203666666,
+      "ma200": 637.21076508
+    }
+  },
+  "current": {
+    "stats": {
+      "completed_trades": 60,
+      "wins": 25,
+      "losses": 35,
+      "win_rate": 0.4166666666666667,
+      "payoff_ratio": 4.043097996111842,
+      "profit_factor": 2.887927140079887,
+      "mdd": -0.20288191398142852,
+      "end_equity": 436162.71957104205,
+      "cagr": 0.05638675130089377,
+      "active_position_at_end": false,
+      "pending_order_at_end": null
+    },
+    "last_completed_date": "2026-11-09",
+    "open_position": null,
+    "pending_order_at_close": null,
+    "last_indicators": {
+      "ma10": 689.351,
+      "ma20": 704.3045,
+      "ma60": 719.1229999999999,
+      "ma200": 680.0888091792202
+    }
+  },
+  "source_update": {
+    "frozen_cutoff": "2026-07-13",
+    "completed_cutoff": "2026-11-09",
+    "old_rows": 6877,
+    "additional_sessions": 84,
+    "total_sessions": 6961,
+    "overlap_sessions": 10,
+    "rebase_ratio": 0.9989609457128912,
+    "rebase_max_deviation": 8.498454444616499e-06,
+    "overlap_max_raw_close_difference": 2.9000000040468876e-05,
+    "latest_close_unadjusted": 679.35,
+    "source_sha256": "2cef4c6567a0e44295033d3d8bd84d26e95942840b3f8683fd1e7a290613e248",
+    "vendor": "StockQuote.io (Yahoo-style adjusted OHLCV, crosschecked with StockAnalysis/S&P Global)",
+    "as_of_us_eastern": "2026-11-09",
+    "new_source_bars_have_no_unexplained_weekday_gaps": true,
+    "prior_trades_and_equity_exactly_preserved": true
+  },
+  "forward_interval": {
+    "first_session": "2026-07-14",
+    "final_session": "2026-11-09",
+    "added_session_count": 84,
+    "completed_trades_after_frozen_cutoff": 2,
+    "completed_trade_ids": [
+      59,
+      60
+    ],
+    "equity_at_frozen_cutoff": 450595.85050362843,
+    "equity_at_current_cutoff": 436162.71957104205,
+    "equity_change_pct": -0.0320312113759027,
+    "unadjusted_latest_qqq_close": 679.35,
+    "adjusted_latest_qqq_close": 679.35
+  }
+}

@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 from qqq_a2.engine import Config, combine_rebased_sources, load_adjusted_csv, run_backtest
-from qqq_a2.cash_yield import (align_previous_quote, cash_overlay,
+from qqq_a2.cash_yield import (align_previous_quote, append_rate_quotes, cash_overlay,
                                equity_stats, read_yield_csv)
 
 BASE_LABEL = "A2_0pct_cash"
@@ -125,8 +125,10 @@ def plot_equity(curves: pd.DataFrame, metrics: pd.DataFrame,
     fig.suptitle("A2-N20｜空仓期间的短债收益能改善多少？",
                  x=0.09, y=0.975, ha="left", fontsize=26,
                  fontweight="bold", color="#26384b")
+    first_date = str(curves.Date.iloc[0].date())
+    last_date = str(curves.Date.iloc[-1].date())
     fig.text(0.09, 0.915,
-             f"2000-01-03 — 2026-07-13    初始 $100,000    |    0% 现金期末 ${b.end_equity:,.0f}    →    浮动短债净代理 ${n.end_equity:,.0f}",
+             f"{first_date} — {last_date}    初始 $100,000    |    0% 现金期末 ${b.end_equity:,.0f}    →    浮动短债净代理 ${n.end_equity:,.0f}",
              fontsize=14, color="#52687a")
     fig.text(0.09, 0.872,
              f"CAGR {b.cagr:.2%} → {n.cagr:.2%}    |    日度最大回撤 {b.mdd:.2%} → {n.mdd:.2%}    |    策略买卖信号完全不变",
@@ -153,6 +155,7 @@ def main() -> None:
     source.add_argument("--old", help="Locally authorized older QQQ data")
     parser.add_argument("--new", help="Locally authorized newer QQQ data")
     parser.add_argument("--yield-csv", required=True, help="Locally supplied FRED DGS3MO daily CSV")
+    parser.add_argument("--yield-csv-extra", help="Optional later, official DGS3MO quotes extending archived CSV")
     parser.add_argument("--end", default="2026-07-13", help="Inclusive cutoff date")
     parser.add_argument("--outdir", type=Path, default=Path("research/results"))
     parser.add_argument("--chart", type=Path, default=Path("assets/a2_cash_yield_equity.svg"))
@@ -164,7 +167,10 @@ def main() -> None:
             combine_rebased_sources(args.old, args.new, end_date=args.end))
     if args.csv:
         data = data[data.Date <= pd.Timestamp(args.end)].copy()
-    curve, metrics, meta = simulation(data, read_yield_csv(args.yield_csv))
+    yields = read_yield_csv(args.yield_csv)
+    if args.yield_csv_extra:
+        yields = append_rate_quotes(yields, read_yield_csv(args.yield_csv_extra))
+    curve, metrics, meta = simulation(data, yields)
     args.outdir.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(args.outdir / "a2_cash_yield_scenarios.csv", index=False)
     # Only derived month-end account statistics, never underlying OHLCV rates.

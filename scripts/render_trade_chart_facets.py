@@ -122,8 +122,11 @@ def render(data: pd.DataFrame, output: Path, preview: Path | None = None) -> dic
     fig.suptitle("QQQ A2-N20｜七段 K 线复盘，逐笔标记",
                  x=.075, y=.990, ha="left", fontsize=27,
                  fontweight="bold", color=INK)
+    buys = len(trades) + int(bool(active))
+    sells = len(trades)
     fig.text(.075, .968,
-             "2000—2026 · 七段周 K 仅用于清晰展示 · 59 次日线买入（含期末1笔持仓）/ 58 次日线卖出 · 每段纵轴独立",
+             f"2000-01-03 — {latest.date()} · 七段周 K 仅用于清晰展示 · {buys} 次日线买入 / {sells} 次日线卖出"
+             + (" · 期末1笔未平仓" if active else " · 期末空仓") + " · 每段纵轴独立",
              color="#607385", fontsize=13)
     keys = [
         Line2D([0], [0], marker="^", linestyle="None", markersize=11,
@@ -132,25 +135,31 @@ def render(data: pd.DataFrame, output: Path, preview: Path | None = None) -> dic
                markerfacecolor=AMBER, markeredgecolor="white", label="N20 保护退出"),
         Line2D([0], [0], marker="v", linestyle="None", markersize=11,
                markerfacecolor=VIOLET, markeredgecolor="white", label="MA20/60 趋势退出"),
-        Line2D([0], [0], marker="*", linestyle="None", markersize=13,
-               markerfacecolor=BLUE, markeredgecolor="white", label="期末未平仓买入"),
     ]
-    fig.legend(handles=keys, ncol=4, frameon=False, fontsize=12,
+    if active:
+        keys.append(Line2D([0], [0], marker="*", linestyle="None", markersize=13,
+                           markerfacecolor=BLUE, markeredgecolor="white", label="期末未平仓买入"))
+    fig.legend(handles=keys, ncol=len(keys), frameon=False, fontsize=12,
                bbox_to_anchor=(.075, .951), loc="upper left")
+    ledger = ("research/results/A2_strict_58_trades.csv" if latest <= pd.Timestamp("2026-07-13")
+              else "research/results/A2_current_trades_to_2026_11_09.csv")
     fig.text(.075, .014,
-             "图上 K 线按周聚合，但 A2 只在日线收盘判定，次日开盘成交。箭头略移位避免遮挡；精确日期、成交价、收益见 research/results/A2_strict_58_trades.csv。",
+             "图上 K 线按周聚合，但 A2 只在日线收盘判定，次日开盘成交。箭头略移位避免遮挡；"
+             f"精确日期、成交价、收益见 {ledger}。",
              color="#687c8d", fontsize=11)
-    fig.subplots_adjust(left=.075, right=.98, top=.924, bottom=.035, hspace=.61)
+    # Reserve a separate row for the legend; never overlap first-panel title.
+    fig.subplots_adjust(left=.075, right=.98, top=.904, bottom=.035, hspace=.61)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, format="svg", metadata={
         "Title": "QQQ A2-N20 all trading signals in seven weekly-candle panels",
-        "Description": "All 59 daily entries (1 unclosed) and 58 daily exits, weekly OHLC for display only, cutoff 2026-07-13.",
+        "Description": f"All {buys} daily entries and {sells} daily exits, weekly OHLC for display only, cutoff {latest.date()}.",
     })
     if preview:
         preview.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(preview, format="png", dpi=80)
     plt.close(fig)
-    return {"buys": len(trades) + int(bool(active)), "sells": len(trades),
+    return {"buys": buys, "sells": sells, "asof": str(latest.date()),
+            "active_at_end": bool(active),
             "n20": int((trades.exit_reason == "N20 protection").sum())}
 
 

@@ -5,6 +5,8 @@ import argparse
 import json
 from pathlib import Path
 
+import pandas as pd
+
 from .engine import Config, combine_rebased_sources, load_adjusted_csv, run_backtest
 
 
@@ -15,7 +17,7 @@ def main() -> None:
     inputs.add_argument("--old", help="Older source CSV, used with --new for rebased source pair")
     parser.add_argument("--new", help="Newer source CSV for rebased pair")
     parser.add_argument("--start", default="2000-01-03", help="Simulation date, with earlier history for SMA warmup")
-    parser.add_argument("--end", help="Optional inclusive cutoff date for historical pair")
+    parser.add_argument("--end", help="Optional inclusive completed daily cutoff (CSV or historical pair)")
     parser.add_argument("--out", type=Path, default=Path(".a2-output"), help="Output directory (gitignored)")
     parser.add_argument("--initial-cash", type=float, default=100_000)
     args = parser.parse_args()
@@ -25,6 +27,11 @@ def main() -> None:
         parser.error("--new requires --old")
     bars = (load_adjusted_csv(args.csv) if args.csv else
             combine_rebased_sources(args.old, args.new, end_date=args.end))
+    if args.csv and args.end:
+        cutoff = pd.Timestamp(args.end)
+        bars = bars[bars.Date <= cutoff].copy()
+        if bars.empty or bars.Date.iloc[-1] != cutoff:
+            parser.error("CSV has no fully completed bar for the requested --end cutoff")
     result = run_backtest(bars, Config(start_date=args.start, initial_cash=args.initial_cash))
     args.out.mkdir(parents=True, exist_ok=True)
     result["trades"].to_csv(args.out / "trades.csv", index=False)
