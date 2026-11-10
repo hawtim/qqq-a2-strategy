@@ -3,11 +3,38 @@
 > A frozen baseline + reproducible backtest + complete good/bad case ledger + experimental branches.  
 > **研究与模拟跟踪用途。没有券商交易接口，不会自动下单。**
 
-> **当前实验分支：`experiment/ema-a2-n20`。** 这次只研究把 SMA10/20/60/200 改为 EMA10/20/60/200；`main` 的 SMA A2 V1.0 仍是冻结基准。下面所有未特别标明 EMA 的原有章节、资产图和60笔交易表仍描述 **SMA**，不会偷偷用 EMA 覆盖。
+> **当前止损实验分支：`experiment/ema-a2-n20-hardstop8`。** 基于独立 EMA 分支，单独叠加持仓全程生效的净亏损 8% 止损；`main` 的 SMA 基线和 `experiment/ema-a2-n20` 的原版 EMA 均保持不变。未特别注明的现有 SMA/EMA 图表与交易台账仍对应各自原模型。
 
 A2 的核心不是猜顶抄底，而是：**MA20 新上穿 MA60 入场；入场前20个交易日用带浮亏条件的 MA10/20 新死叉控制失败；其余时间等 MA20/60 新死叉退出；出场后只等下一次新的 MA20/60 金叉。**
 
 策略按 QQQ 日线收盘确认、**下一交易日开盘**成交。它在最新完整样本中只有约 **41.67%** 的历史胜率；历史优势来自较高的平均盈亏比，**不等于高胜率、保本或可直接加杠杆**。
+
+## 新实验：EMA N20 + 全程 8% 亏损止损（仅此分支）
+
+研究问题：**N20 只负责前 20 个交易日，再添加持仓全程生效的 8% 净亏损保护，能否减少极端亏损并保留趋势收益？** 原 EMA 金叉进场和 N20/EMA20/60 规则不变；止损按含双边 0.05% 费用的净损失判断。收盘版次日开盘卖，盘中版用日 K Low 近似触发、跳空按更差的开盘价模拟，无法保证止损位成交。
+
+| 指标 | 原 EMA | 8% 收盘→次开盘 | 8% 盘中跳空感知 | 盘中再减 50bp |
+|---|---:|---:|---:|---:|
+| **期末权益** | $608,362 | **$632,733** | $593,063 | $584,212 |
+| CAGR | 6.96% | **7.11%** | 6.85% | 6.79% |
+| 最大回撤 MDD | −32.52% | −29.81% | **−26.00%** | **−26.00%** |
+| 最差单笔亏损 | −14.66% | −11.24% | −14.18% | −14.61% |
+| 已完成交易 / 8% 止损退出 | 54 / 0 | 54 / 3 | 54 / 3 | 54 / 3 |
+
+[![EMA N20 全程 8% 止损：资产与日末回撤对照](assets/a2_ema_stop8_equity_drawdown_2000_2026.svg)](assets/a2_ema_stop8_equity_drawdown_2000_2026.svg)
+
+**关键正反例：** 2000 年首笔原版亏 −14.66%，盘中版提前以约 −8% 退出；但 2015-08-24 大幅跳空开盘使盘中版亏 **−14.18%**，比原版次日死叉退出的 −7.04% 更差。**8% 止损不保证成交亏损上限或账户 MDD ≤8%。** 全样本只有 3 次止损触发，不能据此宣称未来最优。
+
+- [完整研究报告与出场优先级](docs/research/A2_EMA_N20_全程8pct止损_独立回测_2026-11-10.md)
+- [四模型总体指标](research/results/ema_stop8_2026_11_09/summary.csv) · [三笔受影响交易审计](research/results/ema_stop8_2026_11_09/changed_trades.csv) · [分周期表现](research/results/ema_stop8_2026_11_09/period_slices.csv) · [完整交易与月末权益](research/results/ema_stop8_2026_11_09/)
+- [独立回测脚本](research/experiments/a2_ema_hard_stop8.py) · [单元测试](tests/test_ema_hard_stop8.py)
+
+```bash
+python research/experiments/a2_ema_hard_stop8.py \
+  --csv sources/qqq_merged_updated_local.csv --end 2026-11-09
+```
+
+下一节 SMA / EMA / Buy & Hold 对比仍是**未加本次 8% 规则的原始基准**。
 
 ## SMA / EMA / Buy & Hold 三种基准｜收益与回撤一起看
 
