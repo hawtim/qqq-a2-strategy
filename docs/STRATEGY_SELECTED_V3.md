@@ -95,3 +95,20 @@ python research/experiments/a2_v3_selected.py \
 输入均为用户自行取得、有权使用的复权日线；历史原始行情不公开。输出：`summary.csv`、`selected_v3_trades.csv`、`selected_v3_daily_equity.csv`、`changed_trades_vs_v2.csv`、`metadata.json`。更宽泛的正反方案与错误案例见 [条件 N20/首日 3% 独立研究](research/A2_V2动态延长N20与买入首日3pct退出_2026-11-11.md)、`research/experiments/a2_dynamic_n20_and_day0_loss_study.py` 和对应 `research/results/a2_dynamic_n20_day0_2026_11_09/`。
 
 最新 QQQ 数据截止 2026-11-09；**必须根据实际最新完整美东交易日的数据重新计算影子持仓状态**。本仓库没有下单功能，文档不构成投资建议、自动交易授权或真实成交保证。
+
+## 7. V3 专属完整交易图与权益回撤图
+
+[![七段周 K、V3 全部 52 次买卖标记和完整成交表](../assets/a2_ema_v3_trade_map_2000_2026.svg)](../assets/a2_ema_v3_trade_map_2000_2026.svg)
+
+[![V3 2000—2026 日末账户权益与日末最大回撤](../assets/a2_ema_v3_equity_drawdown_2000_2026.svg)](../assets/a2_ema_v3_equity_drawdown_2000_2026.svg)
+
+- **图一**：2000—2026 七段周 K 仅作为可读的价格背景；52 笔买卖点取自 V3 独立账本中的真实日线次开盘成交日期及复权开盘价。下方附完整 52 行执行表（15 字段含完整精度的 [CSV](../research/results/a2_v3_selected_2026_11_09/selected_v3_trades.csv) 为数值真值）。深橙色标注 2011 年条件 N20 延期、红色标注 2000 年首日 −3% 的 V3 独有卖点。
+- **图二**：严格用 V3 `selected_v3_daily_equity.csv` 的全部日度权益与回撤生成；背景浅蓝表示持仓日，虚线标记两次与 V2 不同的卖出日期。日末 MDD −19.6813% 不代表盘中或实盘最大回撤。
+- **来源边界**：两张图**不含第三方原始 OHLCV**。原第四方案图保留原貌，V3 交易图从其已发布、相同截止日的七段周 K 矢量几何中取显示背景，完全重画 V3 买卖符号及成交表。若更换历史行情复权基准、修订数据或延长日期，必须重算价格底图，不能仅替换成交 CSV。
+
+```bash
+python scripts/render_v3_audit_charts.py
+PYTHONPATH=src python -m unittest discover -s tests -v
+```
+
+该图仅是冻结样本内审计快照；对照旧 [59 笔第四方案图](../assets/a2_ema_dynamic_n20_trade_map_2000_2026.svg) 时必须留意：**旧图不是 V3**，入场和离场路径不能混用。

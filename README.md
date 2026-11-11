@@ -27,6 +27,22 @@ V3 比 V2 仅改变 **2000-06-22**（−5.73% → −3.77%）和 **2011-10-14**�
 - [V3 汇总数据](research/results/a2_v3_selected_2026_11_09/summary.csv) · [52 笔交易账本](research/results/a2_v3_selected_2026_11_09/selected_v3_trades.csv) · [V2→V3 完整变化](research/results/a2_v3_selected_2026_11_09/changed_trades_vs_v2.csv)
 - [动态 N20、首日 3% 与 4% 对照的全部敏感性反例](docs/research/A2_V2动态延长N20与买入首日3pct退出_2026-11-11.md) · [独立测试数据](research/results/a2_dynamic_n20_day0_2026_11_09/summary.csv)
 
+### V3 全周期 SVG：七段 K 线、所有买卖点与完整交易表
+
+[![V3 七段周 K 线、52 笔日线开盘成交标记与完整成交表](assets/a2_ema_v3_trade_map_2000_2026.svg)](assets/a2_ema_v3_trade_map_2000_2026.svg)
+
+蓝色上三角是实际买入开盘，紫色下三角是 EMA20/60 死叉卖出，橙色是 N20，深橙色是**延期至第 30 日**的 N20 卖出（2011-11-21），红色是**首日收盘跌 3%、次日开盘**卖出（2000-06-23）。底图是按周聚合的 K 线，仅用于显示；所有信号与成交仍严格按**日线**计算。完整 SVG 下半部列出全部 52 笔，表内价格和收益四舍五入；原始精度以 CSV 为准。
+
+[![V3 独立账户权益与最大回撤日线 SVG](assets/a2_ema_v3_equity_drawdown_2000_2026.svg)](assets/a2_ema_v3_equity_drawdown_2000_2026.svg)
+
+两张图都是**V3 专属**，不覆盖旧第四方案、V2 和 SMA 冻结图。图中采用仓库已提交的 V3 交易/权益账本；七段周 K 图的矢量底图复用旧图中已发布的同截止日蜡烛图几何形状，**不**在仓库新增有授权限制的原始行情。复现静态图（无需私有 OHLCV 文件）：
+
+```bash
+python scripts/render_v3_audit_charts.py
+```
+
+图表固定截至 2026-11-09，并非今天的实时交易状态；若更新行情或 V3 版本，必须先重新执行 V3 状态机、更新 CSV 和匹配的行情底图，不能只把图标题的日期改掉。
+
 复现：准备合法取得的三段 QQQ 复权日 K，执行 `python research/experiments/a2_v3_selected.py --old /local/old/QQQ.csv --new /local/new/QQQ.csv --update /local/update.csv --end 2026-11-09`。默认保存到 `research/results/a2_v3_selected_2026_11_09/`。**下文的 V2、四方案、三方案全部为历史研究档案，不代表当前选定基准。**
 
 ## 历史研究候选 V2：月 EMA5 上升减速过滤＋延迟补买＋首日 N20（2026-11-11）
