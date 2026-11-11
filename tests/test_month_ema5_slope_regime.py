@@ -195,6 +195,94 @@ class MonthSlopeGateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             replay_gated(pd.DataFrame(), "baseline", n20_day0="next_week")
 
+    def test_entry_day_close_3pct_exits_at_next_open_not_close(self):
+        dates = pd.bdate_range("2024-01-02", periods=5)
+        s = pd.DataFrame({
+            "Date": dates,
+            "adj_open": [100., 100., 97., 90., 90.],
+            "adj_close": [100., 96.5, 93., 89., 89.],
+            "adj_low": [100., 96., 91., 88., 88.],
+            "ma10": [12.] * 5, "ma20": [11.] * 5, "ma60": [10.] * 5,
+            "gold": [True] + [False] * 4,
+            "death": [False] * 5, "protect_cross": [False] * 5,
+            "ema10_20_gold": [False] * 5,
+            "prev_completed_month_ema5_up": [False] * 5,
+            "gate_baseline": [True] * 5,
+        })
+        cfg = Config(start_date="2024-01-02")
+        original = replay_gated(s, "baseline", config=cfg)
+        guarded = replay_gated(s, "baseline", config=cfg,
+                              entry_day_close_guard=.03)
+        self.assertEqual(original["trades"].iloc[0].exit_date,
+                         str(dates[3].date()))
+        trade = guarded["trades"].iloc[0]
+        self.assertEqual(trade.exit_signal_date, str(dates[1].date()))
+        self.assertEqual(trade.exit_date, str(dates[2].date()))
+        self.assertEqual(trade.exit_price, 97.)
+
+    def test_entry_day_intraday_stop_uses_low_and_is_slippage_sensitive(self):
+        dates = pd.bdate_range("2024-01-02", periods=4)
+        s = pd.DataFrame({
+            "Date": dates,
+            "adj_open": [100.] * 4, "adj_close": [100., 101., 101., 101.],
+            "adj_low": [100., 96., 100., 100.],
+            "ma10": [12.] * 4, "ma20": [11.] * 4, "ma60": [10.] * 4,
+            "gold": [True, False, False, False],
+            "death": [False] * 4, "protect_cross": [False] * 4,
+            "ema10_20_gold": [False] * 4,
+            "prev_completed_month_ema5_up": [False] * 4,
+            "gate_baseline": [True] * 4,
+        })
+        cfg = Config(start_date="2024-01-02")
+        baseline = replay_gated(s, "baseline", config=cfg)
+        modeled = replay_gated(s, "baseline", config=cfg,
+                              entry_day_intraday_stop=.03)
+        slipped = replay_gated(s, "baseline", config=cfg,
+                              entry_day_intraday_stop=.03,
+                              intraday_adverse_slippage=.005)
+        self.assertEqual(baseline["stats"]["completed_trades"], 0)
+        self.assertEqual(modeled["trades"].iloc[0].exit_date,
+                         str(dates[1].date()))
+        self.assertAlmostEqual(modeled["trades"].iloc[0].exit_price, 97.)
+        self.assertAlmostEqual(slipped["trades"].iloc[0].exit_price, 96.515)
+        self.assertTrue(math.isnan(modeled["trades"].iloc[0].mfe_close))
+
+    def test_adaptive_regular_n20_requires_underwater_days_and_spread_decline(self):
+        dates = pd.bdate_range("2024-01-02", periods=33)
+        s = pd.DataFrame({
+            "Date": dates, "adj_open": [100.] * 33,
+            "adj_close": [100.] * 33, "adj_low": [100.] * 33,
+            "ma10": [11.] * 33, "ma20": [10.] * 33,
+            "ma60": [9.] * 33,
+            "gold": [True] + [False] * 32,
+            "death": [False] * 33,
+            "protect_cross": [False] * 26 + [True] + [False] * 6,
+            "ema10_20_gold": [False] * 33,
+            "prev_completed_month_ema5_up": [False] * 33,
+            "gate_baseline": [True] * 33,
+        })
+        # Entry at index 1; N20 decision at index 21. Last five closes
+        # before the deadline contain two underwater days.
+        s.loc[[17, 18], "adj_close"] = 99.
+        s.loc[21, "ma10"] = 10.5  # 10/20 spread is smaller than at index 16
+        s.loc[26, "adj_close"] = 96.
+        s.loc[27, "adj_open"] = 96.
+        cfg = Config(start_date="2024-01-02")
+        old = replay_gated(s, "baseline", config=cfg)
+        guarded = replay_gated(s, "baseline", config=cfg,
+                              regular_n20_extension="underwater_2of5_spread_down")
+        self.assertEqual(old["stats"]["completed_trades"], 0)
+        t = guarded["trades"].iloc[0]
+        self.assertEqual(t.exit_signal_date, str(dates[26].date()))
+        self.assertEqual(t.exit_date, str(dates[27].date()))
+        self.assertEqual(t.exit_reason, "N20 conditional extension")
+
+        healthy = s.copy()
+        healthy.loc[[17, 18], "adj_close"] = 100.1
+        ignored = replay_gated(healthy, "baseline", config=cfg,
+                              regular_n20_extension="underwater_2of5_spread_down")
+        self.assertEqual(ignored["stats"]["completed_trades"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

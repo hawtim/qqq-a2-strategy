@@ -1,0 +1,50 @@
+variant,entry_date,old_exit_date,new_exit_date,old_return_pct,new_return_pct,old_reason,new_reason
+N20_2of5_down_to25,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,N20 conditional extension
+N20_2of5_down_to30,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,N20 conditional extension
+N20_2of5_down_to35,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,N20 conditional extension
+N20_2of10_down_to30,2005-05-24,2005-10-13,2005-06-28,-0.77552,-2.15254,MA20/60 death cross,N20 conditional extension
+N20_2of10_down_to30,2005-10-04,,2005-10-07,,-3.17619,,N20 extended 1d
+N20_2of10_down_to30,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,N20 conditional extension
+N20_spread_down_only,2005-05-24,2005-10-13,2005-06-28,-0.77552,-2.15254,MA20/60 death cross,N20 conditional extension
+N20_spread_down_only,2005-10-04,,2005-10-07,,-3.17619,,N20 extended 1d
+N20_spread_down_only,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,N20 conditional extension
+N20_spread_down_only,2014-11-04,2015-07-10,2014-12-17,6.75542,-1.41055,MA20/60 death cross,N20 conditional extension
+N20_spread_down_only,2014-12-23,,2015-01-06,,-3.317,,N20 extended 1d
+N20_spread_down_only,2015-03-18,,2015-03-27,,-1.27943,,N20 extended 1d
+N20_spread_down_only,2015-06-19,,2015-06-30,,-2.81239,,N20 extended 1d
+N20_spread_down_only,2021-11-02,2022-01-19,2021-12-07,-3.76091,1.50909,MA20/60 death cross,N20 conditional extension
+N20_spread_down_only,2023-01-26,2023-09-29,2023-03-02,24.56506,-0.97812,MA20/60 death cross,N20 conditional extension
+day0_close_1pct_negative_control,2000-06-22,2000-06-26,2000-06-23,-5.73434,-3.77184,7% close stop,entry-day close <= -1%
+day0_close_1pct_negative_control,2012-07-10,2012-07-12,2012-07-11,-2.94097,-1.74557,MA20/60 death cross,entry-day close <= -1%
+day0_close_1pct_negative_control,2019-10-02,2020-03-10,2019-10-03,8.24978,-1.15805,MA20/60 death cross,entry-day close <= -1%
+day0_close_1pct_negative_control,2019-10-15,,2020-03-10,,5.04207,,MA20/60 death cross
+day0_close_1pct_negative_control,2023-10-13,2023-10-23,2023-10-16,-4.76644,-1.1648,MA20/60 death cross,entry-day close <= -1%
+day0_close_2pct,2000-06-22,2000-06-26,2000-06-23,-5.73434,-3.77184,7% close stop,entry-day close <= -2%
+day0_close_3pct,2000-06-22,2000-06-26,2000-06-23,-5.73434,-3.77184,7% close stop,entry-day close <= -3%
+day0_intraday_stop_3pct_ideal,2000-06-22,2000-06-26,2000-06-22,-5.73434,-3.09695,7% close stop,entry-day 3% intraday stop [modeled]
+day0_intraday_stop_3pct_slip25bp,2000-06-22,2000-06-26,2000-06-22,-5.73434,-3.33921,7% close stop,entry-day 3% intraday stop [modeled]
+day0_intraday_stop_3pct_slip50bp,2000-06-22,2000-06-26,2000-06-22,-5.73434,-3.58147,7% close stop,entry-day 3% intraday stop [modeled]
+N20_dynamic_and_day0_close_3pct,2000-06-22,2000-06-26,2000-06-23,-5.73434,-3.77184,7% close stop,entry-day close <= -3%
+N20_dynamic_and_day0_close_3pct,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,N20 conditional extension
+stop4_control,2001-11-13,2002-02-05,2002-01-23,-6.34535,-3.63217,MA20/60 death cross,4% close stop
+stop4_control,2008-08-15,2008-09-03,2008-08-27,-6.05296,-3.98596,N20 protection,4% close stop
+stop4_control,2010-08-05,2010-08-17,2010-08-16,-3.50052,-4.82653,N20 protection,4% close stop
+stop4_control,2011-07-08,2011-08-04,2011-08-03,-4.66251,-4.0837,N20 protection,4% close stop
+stop4_control,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,4% close stop
+stop4_control,2022-08-04,2022-08-30,2022-08-29,-5.31812,-5.77591,N20 protection,4% close stop
+stop4_control,2022-12-05,2022-12-19,2022-12-16,-5.55436,-4.97832,MA20/60 death cross,4% close stop
+stop4_plus_N20_dynamic,2001-11-13,2002-02-05,2002-01-23,-6.34535,-3.63217,MA20/60 death cross,4% close stop
+stop4_plus_N20_dynamic,2008-08-15,2008-09-03,2008-08-27,-6.05296,-3.98596,N20 protection,4% close stop
+stop4_plus_N20_dynamic,2010-08-05,2010-08-17,2010-08-16,-3.50052,-4.82653,N20 protection,4% close stop
+stop4_plus_N20_dynamic,2011-07-08,2011-08-04,2011-08-03,-4.66251,-4.0837,N20 protection,4% close stop
+stop4_plus_N20_dynamic,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,4% close stop + N20 tie
+stop4_plus_N20_dynamic,2022-08-04,2022-08-30,2022-08-29,-5.31812,-5.77591,N20 protection,4% close stop
+stop4_plus_N20_dynamic,2022-12-05,2022-12-19,2022-12-16,-5.55436,-4.97832,MA20/60 death cross,4% close stop
+stop4_plus_day0_close_3pct,2000-06-22,2000-06-26,2000-06-23,-5.73434,-3.77184,7% close stop,entry-day close <= -3%
+stop4_plus_day0_close_3pct,2001-11-13,2002-02-05,2002-01-23,-6.34535,-3.63217,MA20/60 death cross,4% close stop
+stop4_plus_day0_close_3pct,2008-08-15,2008-09-03,2008-08-27,-6.05296,-3.98596,N20 protection,4% close stop
+stop4_plus_day0_close_3pct,2010-08-05,2010-08-17,2010-08-16,-3.50052,-4.82653,N20 protection,4% close stop
+stop4_plus_day0_close_3pct,2011-07-08,2011-08-04,2011-08-03,-4.66251,-4.0837,N20 protection,4% close stop
+stop4_plus_day0_close_3pct,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,4% close stop
+stop4_plus_day0_close_3pct,2022-08-04,2022-08-30,2022-08-29,-5.31812,-5.77591,N20 protection,4% close stop
+stop4_plus_day0_close_3pct,2022-12-05,2022-12-19,2022-12-16,-5.55436,-4.97832,MA20/60 death cross,4% close stop

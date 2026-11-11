@@ -11,6 +11,14 @@ This is a reproducible research repository for QQQ A2-N20. The task is not to ma
 3. Frozen benchmark: strict natural start (no synthetic initial holding), 58 completed trades, 24 winners, 34 losers, 25 N20 exits, Payoff ≈4.02, MDD ≈−20.29%, 2026-07-13 cutoff.
 4. Do not quietly change parameters, initialization, entry price basis, adjustment method, fees, fills, or data period. An alternative must have a distinct version and comparison report.
 
+## Current selected research/paper baseline (2026-11-11)
+
+1. **EMA V3 `EMA_V3_ADAPTIVE_N20_DAY0_CLOSE3` is the user-selected current research baseline**, not a replacement for the independently frozen SMA V1.0 benchmark. The single versioned entrypoint is `research/experiments/a2_v3_selected.py` → `replay_selected_v3()`; full exact rules live in `docs/STRATEGY_SELECTED_V3.md`.
+2. V3 = archived V2 (`up_slow_veto_1_abs` plus deferred regular entry, FAST recovery and N20 on all entry days) **plus** two narrowly specified new exits: at regular-entry age 20, conditionally extend N20 to age 30 if 2/5 recent closes are below entry and EMA10/20 relative spread contracted over five sessions; at entry-day close, if gross price loss >=3%, exit next regular open. Original net 7% close stop and slow EMA20/60 death exit remain.
+3. Version V2, previous EMA fourth option, SMA V1, QQQ buy-and-hold and original result files must all remain reproducible and separately labeled. Never silently re-label a V2 result as V3.
+4. The historically better-performing global **4% closing stop is a negative control / in-sample parameter-selection-bias example** (`stop4_control`), **not the selected rule**. Do not confuse better historical return with proof of overfitting either: the problem is lack of independent validation. Preserve both the attractive figures and the disconfirming cases.
+5. V3 and V2 are still research-only. There is **no brokerage order authorization**; all trades are completed-close signals and next-session regular-open fills, subject to unmodeled execution slippage. Do not classify V3 as proven out-of-sample or imply it guarantees a maximum 3%/7% loss.
+
 ## Data and honesty
 
 - Check `docs/DATA_SOURCES.md` before using data; do not add copyrighted/unlicensed price histories, paid FirstRate Data raw bars, secrets, brokerage tokens, or personal account exports.

@@ -1,0 +1,70 @@
+{
+  "start_date": "2000-01-03",
+  "end_date": "2026-11-09",
+  "status": "in-sample exploratory; not validated for live use",
+  "v2": "up_slow_veto_1_abs, defer gold, N20 day0 all",
+  "base_stop_loss": 0.07,
+  "fee_per_side": 0.0005,
+  "fill": "next regular open except labeled intraday stop approximations",
+  "intraday_stop": "entry-day low <= 97% of entry open; assumed threshold fill minus slippage; no minute validation",
+  "adaptive_n20": "at age20, last 5 daily closes with >=2 below entry and EMA10/EMA20 spread declines over 5 days, extend only until age25/30/35; fresh cross and losing close still required",
+  "variants": {
+    "V2_frozen": {},
+    "N20_2of5_down_to25": {
+      "regular_n20_extension": "underwater_2of5_spread_down",
+      "extended_n20_days": 25
+    },
+    "N20_2of5_down_to30": {
+      "regular_n20_extension": "underwater_2of5_spread_down",
+      "extended_n20_days": 30
+    },
+    "N20_2of5_down_to35": {
+      "regular_n20_extension": "underwater_2of5_spread_down",
+      "extended_n20_days": 35
+    },
+    "N20_2of10_down_to30": {
+      "regular_n20_extension": "underwater_2of10_spread_down"
+    },
+    "N20_spread_down_only": {
+      "regular_n20_extension": "spread_down"
+    },
+    "day0_close_1pct_negative_control": {
+      "entry_day_close_guard": 0.01
+    },
+    "day0_close_2pct": {
+      "entry_day_close_guard": 0.02
+    },
+    "day0_close_3pct": {
+      "entry_day_close_guard": 0.03
+    },
+    "day0_close_3p5pct_negative_control": {
+      "entry_day_close_guard": 0.035
+    },
+    "day0_intraday_stop_3pct_ideal": {
+      "entry_day_intraday_stop": 0.03
+    },
+    "day0_intraday_stop_3pct_slip25bp": {
+      "entry_day_intraday_stop": 0.03,
+      "intraday_adverse_slippage": 0.0025
+    },
+    "day0_intraday_stop_3pct_slip50bp": {
+      "entry_day_intraday_stop": 0.03,
+      "intraday_adverse_slippage": 0.005
+    },
+    "N20_dynamic_and_day0_close_3pct": {
+      "regular_n20_extension": "underwater_2of5_spread_down",
+      "entry_day_close_guard": 0.03
+    },
+    "stop4_control": {
+      "stop_loss": 0.04
+    },
+    "stop4_plus_N20_dynamic": {
+      "stop_loss": 0.04,
+      "regular_n20_extension": "underwater_2of5_spread_down"
+    },
+    "stop4_plus_day0_close_3pct": {
+      "stop_loss": 0.04,
+      "entry_day_close_guard": 0.03
+    }
+  }
+}

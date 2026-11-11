@@ -1,0 +1,3 @@
+variant,entry_date,old_exit_date,new_exit_date,old_return_pct,new_return_pct,old_reason,new_reason
+EMA_V3_ADAPTIVE_N20_DAY0_CLOSE3,2000-06-22,2000-06-26,2000-06-23,-5.73434,-3.77184,7% close stop,entry-day close <= -3%
+EMA_V3_ADAPTIVE_N20_DAY0_CLOSE3,2011-10-14,2011-11-25,2011-11-21,-8.32418,-5.577,7% close stop,N20 conditional extension

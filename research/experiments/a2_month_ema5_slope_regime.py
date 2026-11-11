@@ -126,7 +126,12 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                  defer_rejected_gold: bool = False,
                  hard_stop_fill: str = "next_open",
                  close_fill_adverse_slippage: float = 0.,
-                 n20_day0: str = "none") -> dict:
+                 n20_day0: str = "none",
+                 entry_day_close_guard: float | None = None,
+                 entry_day_intraday_stop: float | None = None,
+                 intraday_adverse_slippage: float = 0.,
+                 regular_n20_extension: str = "none",
+                 extended_n20_days: int = 30) -> dict:
     """Dedicated research replay; no changes to baseline N20/trend exits.
 
     The *original* gold signal is used for in-position trend confirmation;
@@ -141,6 +146,18 @@ def replay_gated(signals: pd.DataFrame, variant: str,
         raise ValueError("Invalid close-fill adverse slippage")
     if n20_day0 not in ("none", "fast", "regular", "all"):
         raise ValueError("Invalid day-zero N20 entry category")
+    extension_rules = ("none", "underwater_at20", "underwater_2of5",
+                       "underwater_2of5_spread_down", "underwater_1of5_spread_down",
+                       "underwater_2of10_spread_down", "spread_down")
+    if regular_n20_extension not in extension_rules:
+        raise ValueError("Invalid regular N20 extension rule")
+    if extended_n20_days < config.n20_days:
+        raise ValueError("Extended N20 must be at least the original N20")
+    for threshold in (entry_day_close_guard, entry_day_intraday_stop):
+        if threshold is not None and not 0 < threshold < 1:
+            raise ValueError("Invalid entry-day loss threshold")
+    if not 0 <= intraday_adverse_slippage < 1:
+        raise ValueError("Invalid intraday stop slippage")
     gate_col = "gate_" + variant
     df = signals.sort_values("Date").reset_index(drop=True)
     cash, shares, position, pending = float(config.initial_cash), 0., None, None
@@ -168,6 +185,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                         str(df.iloc[i - 1].Date.date()) if confirmed else None),
                     "max_close": float(row.adj_close),
                     "min_close": float(row.adj_close),
+                    "n20_extension_qualified": False,
                 }
                 cash, eligible_fast, deferred_gold = 0., False, False
             else:
@@ -212,7 +230,26 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                 n20_day0 == "all" or
                 (n20_day0 == "fast" and fast) or
                 (n20_day0 == "regular" and not fast))
-            n20_active = 1 <= age <= config.n20_days or entry_day_covered
+            if age == config.n20_days and not fast and regular_n20_extension != "none":
+                recent5 = df.iloc[i - 4:i + 1]
+                recent10 = df.iloc[i - 9:i + 1]
+                under5 = int((recent5.adj_close < position["entry_price"]).sum())
+                under10 = int((recent10.adj_close < position["entry_price"]).sum())
+                spread_now = float(row.ma10 / row.ma20 - 1)
+                prev = df.iloc[i - 5]
+                spread_down = spread_now < float(prev.ma10 / prev.ma20 - 1)
+                rules = {
+                    "underwater_at20": float(row.adj_close) < position["entry_price"],
+                    "underwater_2of5": under5 >= 2,
+                    "underwater_2of5_spread_down": under5 >= 2 and spread_down,
+                    "underwater_1of5_spread_down": under5 >= 1 and spread_down,
+                    "underwater_2of10_spread_down": under10 >= 2 and spread_down,
+                    "spread_down": spread_down,
+                }
+                position["n20_extension_qualified"] = bool(rules[regular_n20_extension])
+            n20_active = (1 <= age <= config.n20_days or entry_day_covered or
+                          (not fast and position["n20_extension_qualified"] and
+                           config.n20_days < age <= extended_n20_days))
             if fast:
                 trend_i = position["trend_confirm_index"]
                 n20_active = (age >= 1 or entry_day_covered) and (
@@ -221,7 +258,38 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                        float(row.adj_close) < position["entry_price"])
             hard_hit = float(row.adj_close) <= stop_trigger_price(
                 position["entry_price"], config.fee_per_side, stop_loss)
-            if hard_hit:
+            # A stop-market order placed immediately after entry is approximated
+            # from the entry-day LOW. Fill at the threshold is NOT guaranteed;
+            # adverse slippage is an explicit sensitivity parameter. Unlike a
+            # closing signal, this is executable inside the first session.
+            intraday_hit = (age == 0 and entry_day_intraday_stop is not None and
+                            float(row.adj_low) <= position["entry_price"] *
+                            (1 - entry_day_intraday_stop))
+            if intraday_hit:
+                px = (position["entry_price"] * (1 - entry_day_intraday_stop) *
+                      (1 - intraday_adverse_slippage))
+                cash = shares * px * (1 - config.fee_per_side)
+                ledger.append({
+                    "id": len(ledger) + 1,
+                    "entry_signal_date": position["entry_signal_date"],
+                    "entry_date": position["entry_date"],
+                    "entry_price": position["entry_price"],
+                    "entry_kind": position["entry_kind"],
+                    "trend_confirm_date": position["trend_confirm_date"],
+                    "exit_signal_date": day, "exit_date": day,
+                    "exit_price": px,
+                    "exit_reason": f"entry-day {entry_day_intraday_stop * 100:g}% intraday stop [modeled]",
+                    "hold_days": age,
+                    "ret_net": float(cash / position["entry_cost"] - 1),
+                    # The daily close is AFTER the hypothetical intraday sale;
+                    # attributing it as a held-period excursion would be wrong.
+                    "mfe_close": float("nan"),
+                    "mae_close": float("nan"),
+                    "equity_after_trade": float(cash),
+                })
+                eligible_fast, deferred_gold = True, False
+                shares, position, pending = 0., None, None
+            elif hard_hit:
                 label = f"{stop_loss * 100:g}% close stop"
                 reason = (label + " + trend tie" if bool(row.death)
                           else label + " + N20 tie" if n20_hit else label)
@@ -255,7 +323,14 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                            "reason": "MA20/60 death cross"}
             elif n20_hit:
                 pending = {"side": "sell", "signal_date": day,
-                           "reason": "N20 extended 1d" if fast else "N20 protection"}
+                           "reason": ("N20 extended 1d" if fast else
+                                      "N20 conditional extension" if age > config.n20_days
+                                      else "N20 protection")}
+            elif (age == 0 and entry_day_close_guard is not None and
+                  float(row.adj_close) <= position["entry_price"] *
+                  (1 - entry_day_close_guard)):
+                pending = {"side": "sell", "signal_date": day,
+                           "reason": f"entry-day close <= -{entry_day_close_guard * 100:g}%"}
         else:
             if bool(row.death):
                 deferred_gold = False

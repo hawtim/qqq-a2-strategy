@@ -1,0 +1,40 @@
+{
+  "selected_strategy_version": "EMA_V3_ADAPTIVE_N20_DAY0_CLOSE3",
+  "status": "user-selected research/paper baseline; no live-trading authority",
+  "selected_at": "2026-11-11",
+  "start_date": "2000-01-03",
+  "data_asof": "2026-11-09",
+  "ticker": "QQQ",
+  "initial_cash": 100000,
+  "fee_per_side": 0.0005,
+  "cash_yield": 0,
+  "execution": "completed-close signal; next regular-session open fill",
+  "parameters": {
+    "entry_gate": "up_slow_veto_1_abs",
+    "defer_rejected_gold": true,
+    "n20_day0": "all",
+    "stop_loss": 0.07,
+    "regular_n20_extension": "underwater_2of5_spread_down",
+    "extended_n20_days": 30,
+    "entry_day_close_guard": 0.03
+  },
+  "known_drawbacks": [
+    "2015 V2 EMA crossing changes with tiny historical adjusted-close perturbation",
+    "2011 conditional N20 and globally tighter 4% close stop trigger on the same day",
+    "only one V2 trade changed by each new V3 guard; historical sample selection",
+    "no intraday/minute execution validation, no tax/interest or extra fill slippage"
+  ],
+  "stop4": "in-sample negative control only; NOT part of selected V3",
+  "data_extension": {
+    "frozen_cutoff": "2026-07-13",
+    "completed_cutoff": "2026-11-09",
+    "old_rows": 6877,
+    "additional_sessions": 84,
+    "total_sessions": 6961,
+    "overlap_sessions": 8,
+    "rebase_ratio": 0.9989590849727128,
+    "rebase_max_deviation": 6.343452441104347e-08,
+    "overlap_max_raw_close_difference": 0.0,
+    "latest_close_unadjusted": 679.349976
+  }
+}
