@@ -1,0 +1,6 @@
+Date,gold,known_slope_abs,known_prev_abs,known_prev2_abs,known_slope_pct,known_prev_pct,mtd_slope_abs,gate_baseline,gate_up_only,gate_down_relief_1_abs,gate_down_relief_2_abs,gate_down_relief_2_pct,gate_up_slow_veto_1_abs,gate_up_slow_veto_2_abs,gate_both_1_abs,gate_both_2_abs,gate_both_2_pct,gate_mtd_down_relief_1_abs,gate_mtd_both_1_abs
+2007-12-06,True,0.1540451283792521,1.827398471542871,1.1876749588965012,0.0035352225950935345,0.043773189310263305,0.3916359698689007,True,True,True,True,True,False,True,False,False,False,True,True
+2007-12-24,True,0.1540451283792521,1.827398471542871,1.1876749588965012,0.0035352225950935345,0.043773189310263305,0.3843233670820325,True,True,True,True,True,False,True,False,False,False,True,True
+2008-04-21,True,-0.9337175407057643,-1.7460211619485975,-1.6825664279355692,-0.023116367075487365,-0.041435712639303346,0.3290405719175169,True,False,True,False,False,True,True,True,False,False,True,True
+2008-08-14,True,-0.3669896867793625,-0.675243128764933,1.0543326465571496,-0.009125647931276792,-0.016513473652978616,0.555525021703815,True,False,True,False,False,True,True,True,False,False,True,True
+2009-03-30,True,-1.423487085949759,-1.4756193819788095,-1.9202699825917975,-0.05082443008400461,-0.050048905478904504,-0.2075487679770056,True,False,True,True,False,True,True,True,True,False,True,True

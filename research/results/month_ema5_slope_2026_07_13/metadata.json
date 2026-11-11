@@ -1,0 +1,16 @@
+{
+  "asof": "2026-07-13",
+  "source_type": "locally acquired two-source adjusted QQQ bars",
+  "signal": "month EMA5 recursive adjusted closes, previous completed month",
+  "provisional_exception": "MTD EMA calculated from today's completed daily close and prior completed EMA; never final month close",
+  "entry_gate_scope": "both normal and fast entries; original fast EMA10/20 monthly-positive prerequisite retained",
+  "skipped_gold": "main variants require next independent fresh signal",
+  "defer_control": "__defer variants may enter after gate recovers while same 20/60 bull regime persists",
+  "exit_rules": "original fourth strategy: dynamic N20, 7% close stop, EMA20/60 death",
+  "execution": "signal on completed daily close, fill next regular-session open",
+  "fee_per_side": 0.0005,
+  "initial_cash": 100000,
+  "cash_yield": 0,
+  "tax_and_slippage": "not modeled",
+  "sample_status": "in-sample hypothesis comparison"
+}

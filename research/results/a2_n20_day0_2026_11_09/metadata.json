@@ -1,0 +1,45 @@
+{
+  "asof": "2026-11-09",
+  "initial_cash": 100000,
+  "execution": "complete-day close signal / next regular session adjusted open",
+  "day0_scope": "first entry session only; fresh EMA10/20 death cross and close < adjusted buy open",
+  "n20_day1_to_day20": "unchanged; not shortened when day0 covered",
+  "priority": "7% close stop > EMA20/60 death > N20",
+  "entry_variant": {
+    "fourth_original": {
+      "variant": "baseline",
+      "defer": false
+    },
+    "month_slowdown_defer": {
+      "variant": "up_slow_veto_1_abs",
+      "defer": true
+    }
+  },
+  "switches": [
+    "none",
+    "fast",
+    "regular",
+    "all"
+  ],
+  "return_basis": "QQQ split/dividend adjusted OHLC, USD, cash earns 0",
+  "fee_per_side": 0.0005,
+  "research_status": "in-sample ablation, not live or out-of-sample validation",
+  "no_raw_price_data_committed": true,
+  "input_sha256": {
+    "old": "ad43c07011253fc4431f192aab2a0bf285c030e922492f0982b2d267036cc5ef",
+    "new": "5bc5b83dd59fe24d08758fd1cca06ea337bea242cd267374ca7e3e3d33c12550",
+    "update": "59788482e5f2ef865abe3a7c2f96dc13a292739cdd0c9ba6a9892bee36c525af"
+  },
+  "extension_audit": {
+    "frozen_cutoff": "2026-07-13",
+    "completed_cutoff": "2026-11-09",
+    "old_rows": 6877,
+    "additional_sessions": 84,
+    "total_sessions": 6961,
+    "overlap_sessions": 8,
+    "rebase_ratio": 0.9989590849727128,
+    "rebase_max_deviation": 6.343452441104347e-08,
+    "overlap_max_raw_close_difference": 0.0,
+    "latest_close_unadjusted": 679.349976
+  }
+}

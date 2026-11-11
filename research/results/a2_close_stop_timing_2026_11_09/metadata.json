@@ -1,0 +1,20 @@
+{
+  "end": "2026-11-09",
+  "source_update_audit": {
+    "frozen_cutoff": "2026-07-13",
+    "completed_cutoff": "2026-11-09",
+    "old_rows": 6877,
+    "additional_sessions": 84,
+    "total_sessions": 6961,
+    "overlap_sessions": 8,
+    "rebase_ratio": 0.9989590849727128,
+    "rebase_max_deviation": 6.343452441104347e-08,
+    "overlap_max_raw_close_difference": 0.0,
+    "latest_close_unadjusted": 679.349976
+  },
+  "same_close_oracle": "know finalized close, then transact at it; impossible live without intraday forecast or order committed before close",
+  "slippage": "applied ONLY to same-close 7% stop fills, all other fills unchanged",
+  "stop_trigger": "realized closed daily bar net loss >= 7%, not intraday touch",
+  "other_rules": "identical Dynamic N20 strategy, regular monthly EMA5 fast reentry, and up-slope-veto-defer research candidate",
+  "research_status": "in-sample counterfactual, not executable proof"
+}

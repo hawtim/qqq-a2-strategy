@@ -1,0 +1,3 @@
+context,mode,entry_date,entry_kind_baseline,entry_kind_new,old_exit_signal,new_exit_signal,old_exit_date,new_exit_date,old_reason,new_reason,old_return,new_return,change_type
+month_slowdown_defer,fast,2015-08-18,FAST_EMA10_20_MONTH_EMA5,FAST_EMA10_20_MONTH_EMA5,2015-08-21,2015-08-18,2015-08-24,2015-08-19,7% close stop,N20 extended 1d,-0.15406325177981606,-0.007821813755424678,changed_same_entry
+month_slowdown_defer,all,2015-08-18,FAST_EMA10_20_MONTH_EMA5,FAST_EMA10_20_MONTH_EMA5,2015-08-21,2015-08-18,2015-08-24,2015-08-19,7% close stop,N20 extended 1d,-0.15406325177981606,-0.007821813755424678,changed_same_entry

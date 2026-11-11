@@ -1,0 +1,3 @@
+context,mode,entry_signal_date,entry_date,entry_kind,day0_close_vs_entry,next_open_exit,new_exit_return,old_exit_date,old_exit_reason,old_exit_return,old_trade_would_have_won,old_mfe_close,old_mae_close,saved_vs_old_pp
+month_slowdown_defer,fast,2015-08-17,2015-08-18,FAST_EMA10_20_MONTH_EMA5,-0.003774245181292657,2015-08-19,-0.007821813755424678,2015-08-24,7% close stop,-0.15406325177981606,False,-0.003774245181292657,-0.07979818636096214,14.624143802439137
+month_slowdown_defer,all,2015-08-17,2015-08-18,FAST_EMA10_20_MONTH_EMA5,-0.003774245181292657,2015-08-19,-0.007821813755424678,2015-08-24,7% close stop,-0.15406325177981606,False,-0.003774245181292657,-0.07979818636096214,14.624143802439137
