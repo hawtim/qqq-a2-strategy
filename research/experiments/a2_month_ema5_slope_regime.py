@@ -143,7 +143,9 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                  trend_spread_exit: str = "fast_death",
                  trend_spread_reentry: str = "none",
                  trend_spread_min_gain: float = .10,
-                 trend_spread_lookback: int = 1) -> dict:
+                 trend_spread_lookback: int = 1,
+                 trend_spread_trim_fraction: float | None = None,
+                 trend_spread_trim_restore: str = "ema5_10_gold") -> dict:
     """Dedicated research replay; no changes to baseline N20/trend exits.
 
     The *original* gold signal is used for in-position trend confirmation;
@@ -159,6 +161,15 @@ def replay_gated(signals: pd.DataFrame, variant: str,
     if ((fast_negative_month_mode != "none" or
          deferred_fast_slow_state != "any") and not defer_rejected_fast):
         raise ValueError("Regime experiments require deferred FAST enabled")
+    if trend_spread_trim_fraction is not None:
+        if not 0 < trend_spread_trim_fraction < 1:
+            raise ValueError("Trim must be partial (0,1), never full")
+        if trend_spread_atr_min is None:
+            raise ValueError("Trim requires enabled trend spread detector")
+        if trend_spread_reentry != "none":
+            raise ValueError("Partial restore and full-exit fast reentry are exclusive")
+    if trend_spread_trim_restore not in ("ema5_10_gold", "ema10_20_gold"):
+        raise ValueError("Invalid partial restore signal")
     if trend_spread_exit not in ("fast_death", "early_narrow"):
         raise ValueError("Invalid spread exit")
     if trend_spread_reentry not in ("none", "ema10_20_gold", "ema5_10_gold"):
@@ -226,7 +237,9 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                 (df.adj_close < df.ma10) &
                 (df.ma10 < df.ma10.shift(3))
             )
-        if trend_spread_reentry == "ema5_10_gold":
+        if (trend_spread_reentry == "ema5_10_gold" or
+                trend_spread_trim_fraction is not None and
+                trend_spread_trim_restore == "ema5_10_gold"):
             ema5 = df.adj_close.ewm(span=5, adjust=False).mean()
             df["spread_ema5_gold"] = (
                 (ema5 > df.ma10) & (ema5.shift(1) <= df.ma10.shift(1)))
@@ -241,6 +254,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
     cash, shares, position, pending = float(config.initial_cash), 0., None, None
     eligible_fast, deferred_gold, deferred_fast = False, False, False
     early_spread_reentry_eligible = False
+    rebalance_events = []
     ledger, curve = [], []
 
     for i, row in df.iterrows():
@@ -267,14 +281,18 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                     # Only the running past closing high, known as of each day.
                     "profit_guard_peak_close": entry,
                     "n20_extension_qualified": False,
+                    "trimmed": False, "trim_count": 0,
+                    "restore_count": 0,
                 }
                 cash, eligible_fast, deferred_gold, deferred_fast = 0., False, False, False
                 early_spread_reentry_eligible = False
-            else:
+            elif pending["side"] == "sell":
                 if not shares or position is None:
                     raise AssertionError("Sell without position")
                 px = float(row.adj_open)
-                cash = shares * px * (1 - config.fee_per_side)
+                # In partial-position trials, uninvested cash survives the
+                # final exit; the frozen full-investment case has cash == 0.
+                cash += shares * px * (1 - config.fee_per_side)
                 ledger.append({
                     "id": len(ledger) + 1,
                     "entry_signal_date": position["entry_signal_date"],
@@ -295,6 +313,43 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                 early_spread_reentry_eligible = pending["reason"].startswith(
                     "research trend spread")
                 position, shares = None, 0.
+            elif pending["side"] == "trim":
+                if position is None or position["trimmed"] or not shares:
+                    raise AssertionError("Invalid partial trim")
+                assert trend_spread_trim_fraction is not None
+                px = float(row.adj_open)
+                sold = shares * trend_spread_trim_fraction
+                shares -= sold
+                cash += sold * px * (1 - config.fee_per_side)
+                position["trimmed"] = True
+                position["trim_count"] += 1
+                rebalance_events.append({
+                    "entry_date": position["entry_date"], "action": "trim",
+                    "signal_date": pending["signal_date"], "fill_date": day,
+                    "price": px, "fraction_of_shares": trend_spread_trim_fraction,
+                    "shares_delta": -sold,
+                    "fee": sold * px * config.fee_per_side,
+                    "equity_after_fill": cash + shares * px,
+                })
+            elif pending["side"] == "restore":
+                if position is None or not position["trimmed"] or cash <= 0:
+                    raise AssertionError("Invalid partial restore")
+                px = float(row.adj_open)
+                bought = cash / (px * (1 + config.fee_per_side))
+                fee = bought * px * config.fee_per_side
+                shares += bought
+                cash = 0.
+                position["trimmed"] = False
+                position["restore_count"] += 1
+                rebalance_events.append({
+                    "entry_date": position["entry_date"], "action": "restore",
+                    "signal_date": pending["signal_date"], "fill_date": day,
+                    "price": px, "fraction_of_shares": float("nan"),
+                    "shares_delta": bought, "fee": fee,
+                    "equity_after_fill": cash + shares * px,
+                })
+            else:
+                raise AssertionError("Unknown partial-position order")
             pending = None
 
         if shares:
@@ -415,7 +470,22 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                   (1 - entry_day_close_guard)):
                 pending = {"side": "sell", "signal_date": day,
                            "reason": f"entry-day close <= -{entry_day_close_guard * 100:g}%"}
+            elif trend_spread_trim_fraction is not None and position["trimmed"]:
+                # Restore at the next OPEN, and keep the ORIGINAL entry
+                # price, N20 clock, hard stop and slow-death exit unchanged.
+                # In particular, restoration must not reset the N20 clock.
+                restore_cross = (
+                    bool(row.spread_ema5_gold)
+                    if trend_spread_trim_restore == "ema5_10_gold"
+                    else bool(row.ema10_20_gold)
+                )
+                if bool(row.ma20 > row.ma60) and restore_cross:
+                    pending = {
+                        "side": "restore", "signal_date": day,
+                        "reason": f"research restore {trend_spread_trim_restore}",
+                    }
             elif trend_spread_atr_min is not None and (
+                    not position["trimmed"] and
                     float(row.ma20) > float(row.ma60) and
                     pd.notna(row.spread_lookback_max) and
                     float(row.spread_lookback_max) >= trend_spread_atr_min and
@@ -428,7 +498,9 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                         bool(row.spread_early_narrow))
                 if weak:
                     pending = {
-                        "side": "sell", "signal_date": day,
+                        "side": ("trim" if trend_spread_trim_fraction is not None
+                                 else "sell"),
+                        "signal_date": day,
                         "reason": f"research trend spread {trend_spread_exit}",
                     }
             elif (profit_trail_pct is not None or profit_atr_mult is not None):
@@ -548,7 +620,8 @@ def replay_gated(signals: pd.DataFrame, variant: str,
         "pending_order_at_end": pending,
     }
     return {"trades": trades, "equity": equity, "stats": stats,
-            "open_position": position, "pending_order": pending}
+            "open_position": position, "pending_order": pending,
+            "rebalance_events": pd.DataFrame(rebalance_events)}
 
 
 def comparison(data: pd.DataFrame, *, end: str, config: Config = Config()) -> dict:
