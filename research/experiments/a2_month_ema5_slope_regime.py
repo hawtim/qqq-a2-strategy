@@ -590,9 +590,16 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                              bool(row[gate_col]) and regular else
                              "FAST_EMA10_20_MONTH_EMA5"),
                 }
-        curve.append({"Date": day, "Equity": cash + shares * float(row.adj_close),
-                      "Invested": bool(shares),
-                      "Pending": pending["side"] if pending is not None else ""})
+        curve_row = {
+            "Date": day, "Equity": cash + shares * float(row.adj_close),
+            "Invested": bool(shares),
+            "Pending": pending["side"] if pending is not None else "",
+        }
+        # Keep frozen V3/H3 equity schema completely unchanged by default.
+        if trend_spread_trim_fraction is not None:
+            curve_row["PositionWeight"] = (
+                shares * float(row.adj_close) / curve_row["Equity"])
+        curve.append(curve_row)
 
     trades = pd.DataFrame(ledger)
     if trades.empty:
