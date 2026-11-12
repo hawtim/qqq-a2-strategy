@@ -7,6 +7,8 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+**GOOGL H3 月线过滤完整消融（2026-11-13）**：[2×2 三组取消过滤与冻结 H3 的账户对照](docs/research/H3_GOOGL_月线过滤消融实验_2026-11-13.md) · [完整派生统计 CSV](research/results/h3_googl_2026_11_11/monthly_ablation_summary.csv) · [可复算脚本](research/experiments/h3_googl_monthly_ablation.py)。全部取消后 CAGR **13.72% → 12.57%**，MDD **−35.49% → −42.03%**，交易 58 → 78；2022 年取消 FAST 月线斜率过滤的全年账户收益 **−23.38% → −38.61%**。负面研究，不采纳，冻结 H3 不变。
+
 **GOOGL 七段空仓 FAST 归因（2026-11-13）**：[逐日检查 FAST 金叉、月 EMA5 拒绝原因及 58/58 开仓对账](docs/research/H3_GOOGL_FAST月线过滤归因_2026-11-13.md)。指定的七段空仓上涨共 12 次新 FAST 金叉：首次开仓前 3 次无 FAST 资格，后续 9 次全部被月线条件拦截（3 次上升减速 veto、6 次月斜率不符合 H3 FAST 例外）；**并不证明解除过滤会改善收益或 MDD**。策略不改。
 
 ### 2026-11-13：H3 回调重入负面研究归档；GOOGL 全历史跨标的验证
