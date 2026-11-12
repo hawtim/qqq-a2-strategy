@@ -65,13 +65,15 @@ def period_metrics(equity: pd.DataFrame, config: Config = Config()) -> list[dict
         ("2004-2009", "2004-01-01", "2009-12-31"),
         ("2010-2015", "2010-01-01", "2015-12-31"),
         ("2016-2021", "2016-01-01", "2021-12-31"),
-        ("2022-onward", "2022-01-01", "9999-12-31"),
+        ("2022-onward", "2022-01-01", None),
     ]
     e = equity.copy()
     e["Date"] = pd.to_datetime(e.Date)
     records = []
     for period, start, stop in periods:
-        part = e[(e.Date >= pd.Timestamp(start)) & (e.Date <= pd.Timestamp(stop))]
+        part = e[e.Date >= pd.Timestamp(start)]
+        if stop is not None:
+            part = part[part.Date <= pd.Timestamp(stop)]
         if part.empty:
             continue
         before = e[e.Date < pd.Timestamp(start)]
@@ -103,9 +105,9 @@ def trade_context(signals: pd.DataFrame, name: str, result: dict) -> pd.DataFram
             "entry_date": tr.entry_date,
             "exit_date": tr.exit_date,
             "entry_kind": tr.entry_kind,
-            "entry_source": ("FAST_NEW_CROSS" if bool(row.ema10_20_gold) else
-                             "FAST_DEFERRED" if "FAST" in tr.entry_kind else
-                             "REGULAR"),
+            "entry_source": ("REGULAR" if "FAST" not in tr.entry_kind else
+                             "FAST_NEW_CROSS" if bool(row.ema10_20_gold) else
+                             "FAST_DEFERRED"),
             "slow_bull_at_signal": bool(row.ma20 > row.ma60),
             "monthly_slope": slope, "previous_month_slope": previous,
             "negative_decelerating": bool(slope < 0 and previous < 0
