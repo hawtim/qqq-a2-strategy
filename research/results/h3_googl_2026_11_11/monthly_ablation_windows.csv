@@ -1,0 +1,8 @@
+window,baseline_flat_start,baseline_next_entry,earlier_only_no_veto,earlier_only_no_fast_slope,earlier_no_monthly_filter,interpretation
+IPO first entry,2004-08-19,2005-05-03,2005-04-11,,2005-04-11,Only REGULAR allowed before first sale
+2007 recovery,2007-08-22,2007-10-02,2007-08-24,,2007-08-24,Global monthly positive slowdown veto delayed REGULAR
+2009 rebound,2009-01-20,2009-02-06,,2009-01-27,2009-01-27,Monthly negative deceleration blocked FAST
+2024 rebound,2024-03-06,2024-04-02,2024-03-19,,2024-03-19,Global monthly positive slowdown veto blocked FAST
+2025 rebound,2025-05-12,2025-05-29,,2025-05-15,2025-05-15,FAST month slope gate blocked early trend
+2026 spring,2026-03-09,2026-04-15,,2026-04-09,2026-04-09,FAST monthly slope had just changed sign
+2026 summer-fall,2026-07-23,2026-10-14,2026-08-05,2026-09-21,2026-08-05,Month gate avoided multiple losing reentries
