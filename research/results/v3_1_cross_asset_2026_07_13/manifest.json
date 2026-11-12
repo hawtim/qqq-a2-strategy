@@ -1,0 +1,48 @@
+{
+  "experiment": "EMA_V3_1_DEFERRED_FAST_CROSS_ASSET",
+  "selected_strategy": "EMA_V3_ADAPTIVE_N20_DAY0_CLOSE3",
+  "branch": "research/v3-1-cross-asset-deferred-fast",
+  "study_date": "2026-11-12",
+  "status": "research candidate; V3 main unchanged; in-sample cross-asset comparison",
+  "asof": {
+    "QQQ": "2026-07-13",
+    "SPY": "2026-07-23"
+  },
+  "qqq_sources": [
+    {
+      "url": "https://github.com/jtang25/Stock-Market-Index-Daily-Return-Distribution-/blob/main/QQQ.csv",
+      "git_blob_sha": "c9082223ca2b10530772de5ed68e4982f4d4c115",
+      "raw_lines": 5916
+    },
+    {
+      "url": "https://github.com/jameswdonoghue/QQQ-Data/blob/main/QQQ.csv",
+      "git_blob_sha": "49d2012b48c39d7e9b2baf89dc67e33453070e62",
+      "last_complete_used": "2026-07-13"
+    }
+  ],
+  "qqq_rebase": {
+    "overlap_trading_days": 2439,
+    "raw_close_max_abs_difference": 0,
+    "older_adj_close_scale_to_newer": 0.9758811548309515,
+    "merged_ohlcv_days": 6877,
+    "warmup_start": "1999-03-10",
+    "trade_start": "2000-01-03",
+    "cutoff": "2026-07-13",
+    "source_data_published": false
+  },
+  "spy_source": "https://github.com/Setooooo/etf-insight/blob/master/data/raw/SPY.csv",
+  "policy": "Do not distribute third-party OHLCV; derived metrics and trades only",
+  "execution": "full cash or full adjusted-share exposure; signals after close, next open fills; fee 0.05% per side; zero idle cash yield; no taxes, no slippage",
+  "outputs": [
+    "summary.csv",
+    "qqq_candidate_only_completed_trades.csv"
+  ],
+  "important_known_failure_cases": [
+    "QQQ 2015-08-18 near-zero EMA10/20 spread and first-day N20 dependence",
+    "QQQ A 2022-12-02 failed early reentry",
+    "QQQ 2004-2009 segment underperformance",
+    "SPY A derived from previously inspected SPY history"
+  ],
+  "statistical_warning": "QQQ remains in-sample for the overall V3 family; cross-asset is a transfer test, not independent out-of-sample",
+  "further_replay_requires": "Locally authorized OHLCV for the same source snapshots"
+}
