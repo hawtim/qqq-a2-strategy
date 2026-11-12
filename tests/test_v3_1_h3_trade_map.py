@@ -12,7 +12,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SVG = ROOT / "assets" / "a2_ema_v3_1_h3_trade_map_2000_2026_07.svg"
+SVG = ROOT / "assets" / "a2_ema_v3_1_h3_trade_map_2000_2026_07_frozen.svg"
 TRADES = ROOT / "research" / "results" / "v3_1_h3_2026_07_13" / "h3_trades.csv"
 SUMMARY = ROOT / "research" / "results" / "v3_1_h3_2026_07_13" / "summary.csv"
 NS = {"s": "http://www.w3.org/2000/svg"}
