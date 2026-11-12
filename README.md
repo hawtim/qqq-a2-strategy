@@ -4,6 +4,8 @@
 > [完整规则、QQQ/SPY 正反测试与复现](docs/research/V3_1_A_FAST资格延续_跨标的QQQ_SPY_2026-11-12.md) · [独立执行入口](research/experiments/a2_v3_1_cross_asset.py) · [派生对照统计](research/results/v3_1_cross_asset_2026_07_13/summary.csv) · [QQQ 新增 FAST 交易](research/results/v3_1_cross_asset_2026_07_13/qqq_candidate_only_completed_trades.csv)  
 > **QQQ 截至 2026-07-13:** V3 $924,686 / CAGR 8.747% / MDD −19.68%；A $928,191 / CAGR 8.763% / MDD −19.42%。该截止日两者有未平仓头寸；禁止与 2026-11-09 的冻结 V3 期末资产混比。当前属于历史样本内研究，不代表今天的实时仓位或自动交易许可。
 
+> **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
+
 
 > A frozen baseline + reproducible backtest + complete good/bad case ledger + experimental branches.  
 > **研究与模拟跟踪用途。没有券商交易接口，不会自动下单。**
