@@ -131,7 +131,8 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                  entry_day_intraday_stop: float | None = None,
                  intraday_adverse_slippage: float = 0.,
                  regular_n20_extension: str = "none",
-                 extended_n20_days: int = 30) -> dict:
+                 extended_n20_days: int = 30,
+                 defer_rejected_fast: bool = False) -> dict:
     """Dedicated research replay; no changes to baseline N20/trend exits.
 
     The *original* gold signal is used for in-position trend confirmation;
@@ -161,7 +162,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
     gate_col = "gate_" + variant
     df = signals.sort_values("Date").reset_index(drop=True)
     cash, shares, position, pending = float(config.initial_cash), 0., None, None
-    eligible_fast, deferred_gold = False, False
+    eligible_fast, deferred_gold, deferred_fast = False, False, False
     ledger, curve = [], []
 
     for i, row in df.iterrows():
@@ -187,7 +188,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                     "min_close": float(row.adj_close),
                     "n20_extension_qualified": False,
                 }
-                cash, eligible_fast, deferred_gold = 0., False, False
+                cash, eligible_fast, deferred_gold, deferred_fast = 0., False, False, False
             else:
                 if not shares or position is None:
                     raise AssertionError("Sell without position")
@@ -209,7 +210,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                     "mae_close": position["min_close"] / position["entry_price"] - 1,
                     "equity_after_trade": float(cash),
                 })
-                eligible_fast, deferred_gold = True, False
+                eligible_fast, deferred_gold, deferred_fast = True, False, False
                 position, shares = None, 0.
             pending = None
 
@@ -287,7 +288,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                     "mae_close": float("nan"),
                     "equity_after_trade": float(cash),
                 })
-                eligible_fast, deferred_gold = True, False
+                eligible_fast, deferred_gold, deferred_fast = True, False, False
                 shares, position, pending = 0., None, None
             elif hard_hit:
                 label = f"{stop_loss * 100:g}% close stop"
@@ -314,7 +315,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                         "mae_close": position["min_close"] / position["entry_price"] - 1,
                         "equity_after_trade": float(cash),
                     })
-                    eligible_fast, deferred_gold = True, False
+                    eligible_fast, deferred_gold, deferred_fast = True, False, False
                     shares, position, pending = 0., None, None
                 else:
                     pending = {"side": "sell", "signal_date": day, "reason": reason}
@@ -339,8 +340,20 @@ def replay_gated(signals: pd.DataFrame, variant: str,
             regular = bool(row.gold) or (
                 defer_rejected_gold and deferred_gold and
                 bool(row.ma20 > row.ma60))
-            fast = (eligible_fast and bool(row.prev_completed_month_ema5_up) and
-                    bool(row.ema10_20_gold))
+            # V3.1 optional: retain a FAST crossing rejected by either
+            # monthly condition. Recheck only when flat; eligibility begins
+            # after a SELL and is invalidated by the next EMA10/20 death.
+            if defer_rejected_fast and eligible_fast:
+                if bool(row.protect_cross) or not bool(row.ma10 > row.ma20):
+                    deferred_fast = False
+                if (bool(row.ema10_20_gold) and
+                        (not bool(row.prev_completed_month_ema5_up)
+                         or not bool(row[gate_col]))):
+                    deferred_fast = True
+            fast = (eligible_fast and bool(row.prev_completed_month_ema5_up)
+                    and (bool(row.ema10_20_gold) or
+                         (defer_rejected_fast and deferred_fast
+                          and bool(row.ma10 > row.ma20))))
             if bool(row[gate_col]) and (regular or fast):
                 pending = {"side": "buy", "signal_date": day,
                            "kind": ("REGULAR_EMA20_60" if regular
