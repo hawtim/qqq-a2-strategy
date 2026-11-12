@@ -49,7 +49,8 @@ class H3TradeMapTests(unittest.TestCase):
         panels = [g for g in groups if g.get("class") == "h3-panel"]
         buys = [g for g in groups if
                 (g.get("class") or "").split(" ")[0] == "h3-buy"]
-        sells = [g for g in groups if g.get("class") == "h3-sell"]
+        sells = [g for g in groups if
+                 (g.get("class") or "").split(" ")[0] == "h3-sell"]
         self.assertEqual(len(panels), 7)
         self.assertEqual(len(buys), 59)  # 58 closed + last open
         self.assertEqual(len(sells), 58)
