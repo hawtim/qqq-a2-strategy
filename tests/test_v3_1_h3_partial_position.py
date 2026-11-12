@@ -44,8 +44,8 @@ class PartialH3Tests(unittest.TestCase):
         self.assertAlmostEqual(events.iloc[0].fraction_of_shares, .5)
         self.assertEqual(events.iloc[1].action, "restore")
         # The synthetic data has a 5/10 gold cross after the trim.
-        self.assertEqual(events.iloc[1].signal_date, str(s.Date.iloc[27].date()))
-        self.assertEqual(events.iloc[1].fill_date, str(s.Date.iloc[28].date()))
+        self.assertEqual(events.iloc[1].signal_date, str(s.Date.iloc[28].date()))
+        self.assertEqual(events.iloc[1].fill_date, str(s.Date.iloc[29].date()))
         self.assertEqual(r["open_position"]["entry_date"], str(s.Date.iloc[1].date()))
         self.assertEqual(r["open_position"]["entry_index"], 1)
         self.assertEqual(r["open_position"]["restore_count"], 1)
@@ -56,7 +56,7 @@ class PartialH3Tests(unittest.TestCase):
         self.assertGreater(partial, .4)
         self.assertLess(partial, .6)
         self.assertAlmostEqual(
-            row.at[str(s.Date.iloc[28].date()), "PositionWeight"], 1.,
+            row.at[str(s.Date.iloc[29].date()), "PositionWeight"], 1.,
             places=9)
 
     def test_fee_debits_at_every_participating_order(self):
