@@ -138,7 +138,11 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                  profit_trail_pct: float | None = None,
                  profit_min_gain: float = .10,
                  profit_atr_mult: float | None = None,
-                 profit_confirmation: str = "none") -> dict:
+                 profit_confirmation: str = "none",
+                 trend_spread_atr_min: float | None = None,
+                 trend_spread_exit: str = "fast_death",
+                 trend_spread_reentry: str = "none",
+                 trend_spread_min_gain: float = .10) -> dict:
     """Dedicated research replay; no changes to baseline N20/trend exits.
 
     The *original* gold signal is used for in-position trend confirmation;
@@ -154,6 +158,16 @@ def replay_gated(signals: pd.DataFrame, variant: str,
     if ((fast_negative_month_mode != "none" or
          deferred_fast_slow_state != "any") and not defer_rejected_fast):
         raise ValueError("Regime experiments require deferred FAST enabled")
+    if trend_spread_exit not in ("fast_death", "early_narrow"):
+        raise ValueError("Invalid spread exit")
+    if trend_spread_reentry not in ("none", "ema10_20_gold", "ema5_10_gold"):
+        raise ValueError("Invalid spread re-entry")
+    if trend_spread_atr_min is not None and trend_spread_atr_min < 0:
+        raise ValueError("Spread/ATR threshold must be nonnegative")
+    if trend_spread_atr_min is not None and not 0 < trend_spread_min_gain < 1:
+        raise ValueError("Invalid trend-spread minimum profit")
+    if trend_spread_atr_min is None and trend_spread_reentry != "none":
+        raise ValueError("Spread re-entry requires opt-in spread exit")
     if profit_trail_pct is not None and not 0 < profit_trail_pct < 1:
         raise ValueError("Invalid profit trail percent")
     if profit_atr_mult is not None and not profit_atr_mult > 0:
@@ -186,6 +200,29 @@ def replay_gated(signals: pd.DataFrame, variant: str,
     df = signals.sort_values("Date").reset_index(drop=True)
     # Historical research-only ATR20: today's complete bar is available
     # only after close. No current/next intraday high or low informs an exit.
+    if trend_spread_atr_min is not None:
+        prev_close = df.adj_close.shift(1)
+        true_range = pd.concat([
+            df.adj_high - df.adj_low,
+            (df.adj_high - prev_close).abs(),
+            (df.adj_low - prev_close).abs(),
+        ], axis=1).max(axis=1)
+        df["spread_atr20"] = true_range.rolling(20, min_periods=20).mean()
+        df["spread_in_atr"] = (df.ma20 - df.ma60) / df.spread_atr20
+        # Strictly past-or-present closing-bar features: no future K lines.
+        if trend_spread_exit == "early_narrow":
+            spread = df.ma10 - df.ma20
+            df["spread_early_narrow"] = (
+                (spread < spread.shift(1)) &
+                (spread.shift(1) < spread.shift(2)) &
+                (spread.shift(2) < spread.shift(3)) &
+                (df.adj_close < df.ma10) &
+                (df.ma10 < df.ma10.shift(3))
+            )
+        if trend_spread_reentry == "ema5_10_gold":
+            ema5 = df.adj_close.ewm(span=5, adjust=False).mean()
+            df["spread_ema5_gold"] = (
+                (ema5 > df.ma10) & (ema5.shift(1) <= df.ma10.shift(1)))
     if profit_atr_mult is not None:
         prev_close = df.adj_close.shift(1)
         true_range = pd.concat([
@@ -196,6 +233,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
         df["profit_guard_atr20"] = true_range.rolling(20, min_periods=20).mean()
     cash, shares, position, pending = float(config.initial_cash), 0., None, None
     eligible_fast, deferred_gold, deferred_fast = False, False, False
+    early_spread_reentry_eligible = False
     ledger, curve = [], []
 
     for i, row in df.iterrows():
@@ -224,6 +262,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                     "n20_extension_qualified": False,
                 }
                 cash, eligible_fast, deferred_gold, deferred_fast = 0., False, False, False
+                early_spread_reentry_eligible = False
             else:
                 if not shares or position is None:
                     raise AssertionError("Sell without position")
@@ -246,6 +285,8 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                     "equity_after_trade": float(cash),
                 })
                 eligible_fast, deferred_gold, deferred_fast = True, False, False
+                early_spread_reentry_eligible = pending["reason"].startswith(
+                    "research trend spread")
                 position, shares = None, 0.
             pending = None
 
@@ -367,6 +408,22 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                   (1 - entry_day_close_guard)):
                 pending = {"side": "sell", "signal_date": day,
                            "reason": f"entry-day close <= -{entry_day_close_guard * 100:g}%"}
+            elif trend_spread_atr_min is not None and (
+                    float(row.ma20) > float(row.ma60) and
+                    pd.notna(row.spread_in_atr) and
+                    float(row.spread_in_atr) >= trend_spread_atr_min and
+                    position["profit_guard_peak_close"] >=
+                    position["entry_price"] * (1 + trend_spread_min_gain)):
+                # Compare fast death and earlier three-day spread narrowing.
+                # All signals confirmed at end of current day; fill next open.
+                weak = (bool(row.protect_cross) if
+                        trend_spread_exit == "fast_death" else
+                        bool(row.spread_early_narrow))
+                if weak:
+                    pending = {
+                        "side": "sell", "signal_date": day,
+                        "reason": f"research trend spread {trend_spread_exit}",
+                    }
             elif (profit_trail_pct is not None or profit_atr_mult is not None):
                 past_peak = position["profit_guard_peak_close"]
                 gain = past_peak / position["entry_price"] - 1
@@ -396,6 +453,7 @@ def replay_gated(signals: pd.DataFrame, variant: str,
         else:
             if bool(row.death):
                 deferred_gold = False
+                early_spread_reentry_eligible = False
             if bool(row.gold) and not bool(row[gate_col]):
                 deferred_gold = True
             regular = bool(row.gold) or (
@@ -438,10 +496,21 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                     and (bool(row.ema10_20_gold) or
                          (defer_rejected_fast and deferred_fast
                           and bool(row.ma10 > row.ma20))))
-            if bool(row[gate_col]) and (regular or fast):
-                pending = {"side": "buy", "signal_date": day,
-                           "kind": ("REGULAR_EMA20_60" if regular
-                                    else "FAST_EMA10_20_MONTH_EMA5")}
+            fast_reentry = (
+                early_spread_reentry_eligible and
+                trend_spread_reentry != "none" and
+                bool(row.ma20 > row.ma60) and
+                (bool(row.ema10_20_gold) if
+                 trend_spread_reentry == "ema10_20_gold"
+                 else bool(row.spread_ema5_gold))
+            )
+            if bool(row[gate_col]) and (regular or fast) or fast_reentry:
+                pending = {
+                    "side": "buy", "signal_date": day,
+                    "kind": ("REGULAR_EMA20_60" if
+                             bool(row[gate_col]) and regular else
+                             "FAST_EMA10_20_MONTH_EMA5"),
+                }
         curve.append({"Date": day, "Equity": cash + shares * float(row.adj_close),
                       "Invested": bool(shares),
                       "Pending": pending["side"] if pending is not None else ""})
