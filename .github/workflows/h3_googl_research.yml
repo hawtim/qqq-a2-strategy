@@ -1,0 +1,25 @@
+name: H3 GOOGL cross-asset research
+on:
+  push:
+    branches:
+      - research/v3-1-cross-asset-deferred-fast
+    paths:
+      - research/experiments/h3_googl_cross_asset.py
+      - .github/workflows/h3_googl_research.yml
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[dev]'
+      - run: python research/experiments/h3_googl_cross_asset.py --outdir research/results/h3_googl_cross_asset_run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h3-googl-cross-asset
+          path: research/results/h3_googl_cross_asset_run/
+          if-no-files-found: warn
