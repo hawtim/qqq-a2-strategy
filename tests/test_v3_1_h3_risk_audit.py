@@ -43,6 +43,7 @@ class H3RiskAuditTests(unittest.TestCase):
             "entry_kind": "FAST_EMA10_20_MONTH_EMA5",
             "ret_net": "-0.101",
             "mae_close": "-0.07",
+            "mfe_close": "0.05",
         }
         a = audit_trade(df, tr, cutoff="2024-01-05")
         self.assertAlmostEqual(a["max_close_floating_loss_pct"], -7)
