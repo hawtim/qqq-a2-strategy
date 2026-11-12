@@ -1,5 +1,10 @@
 # QQQ A2-N20 · 可复现的日线趋势策略
 
+> **当前分支：V3.1-A 跨标的验证（尚未提升为正式策略）。** 本分支在原 V3 上仅增加「卖出后被月线拦截的 FAST 金叉资格延续」。原 V3 默认规则仍保持冻结。  
+> [完整规则、QQQ/SPY 正反测试与复现](docs/research/V3_1_A_FAST资格延续_跨标的QQQ_SPY_2026-11-12.md) · [独立执行入口](research/experiments/a2_v3_1_cross_asset.py) · [派生对照统计](research/results/v3_1_cross_asset_2026_07_13/summary.csv) · [QQQ 新增 FAST 交易](research/results/v3_1_cross_asset_2026_07_13/qqq_candidate_only_completed_trades.csv)  
+> **QQQ 截至 2026-07-13:** V3 $924,686 / CAGR 8.747% / MDD −19.68%；A $928,191 / CAGR 8.763% / MDD −19.42%。该截止日两者有未平仓头寸；禁止与 2026-11-09 的冻结 V3 期末资产混比。当前属于历史样本内研究，不代表今天的实时仓位或自动交易许可。
+
+
 > A frozen baseline + reproducible backtest + complete good/bad case ledger + experimental branches.  
 > **研究与模拟跟踪用途。没有券商交易接口，不会自动下单。**
 
