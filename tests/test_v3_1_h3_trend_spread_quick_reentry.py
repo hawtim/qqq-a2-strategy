@@ -106,7 +106,9 @@ class H3TrendSpreadQuickReentryTests(unittest.TestCase):
         x = sample()
         # Strongly separated EMA20/60 earlier, but nearly converged by
         # the FAST death-cross day; long trend still EMA20 > EMA60.
-        x.loc[18:, "ma60"] = 119.
+        # Keep EMA20/60 distance wide on session 19/20, when ATR20
+        # first has 20 complete observations, then narrow on signal day.
+        x.loc[21:, "ma60"] = 119.
         current = replay_gated(
             x, ENTRY_GATE, config=CFG, **V3_PARAMETERS,
             defer_rejected_fast=True,
