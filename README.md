@@ -7,6 +7,11 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+### 2026-11-13：H3 回调重入负面研究归档；GOOGL 全历史跨标的验证
+
+- **回调重入方向暂时搁置**：[趋势扩张、动能衰减提前退出与 13 种重入方案的完整负面实验记录](docs/research/H3_趋势扩张动能衰减_提前退出重入_负面实验归档_2026-11-13.md)；不会改变冻结 H3。
+- **GOOGL 全历史原生 H3 回测已执行**：[2004–2026 的 5,594 根日 K、58 笔交易、风险归因与对照](docs/research/H3_GOOGL_全历史跨标的回测_2026-11-13.md) · [结果摘要](research/results/h3_googl_2026_11_11/summary.csv) · [完整交易和权益 CSV（GitHub Actions artifact）](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43262766598/artifacts/13963834223) · [复算入口](research/experiments/h3_googl_cross_asset.py)。GOOGL H3 CAGR **13.72%** / MDD **−35.49%** / Payoff **6.02**，明显降低长期持有的回撤，却落后其 CAGR **23.95%**。本实验保持 H3 参数完全不变；历史样本内，研究用途。
+
 ### H3 新研究：盈利快线死叉卖出，等待慢线收敛＋快线再金叉（2026-11-12）
 
 - [完整事件分布、15 组账户对照与案例归因](docs/research/V3_1_H3_盈利快死叉退出_慢线收敛后快金叉重入_2026-11-12.md) · [所有方案收益/回撤 CSV](research/results/v3_1_h3_ma_spread_2026_11_11/summary.csv) · [60 笔峰值均线间距](research/results/v3_1_h3_ma_spread_2026_11_11/peak_geometry.csv) · [31 笔首次盈利快死叉事件](research/results/v3_1_h3_ma_spread_2026_11_11/first_profitable_fast_death_geometry.csv) · [Python 研究复算入口](research/experiments/a2_v3_1_h3_fast_death_slow_reconvergence.py)。
