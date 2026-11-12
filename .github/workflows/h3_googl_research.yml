@@ -6,6 +6,7 @@ on:
     paths:
       - research/experiments/h3_googl_cross_asset.py
       - research/experiments/h3_googl_fast_opportunity_audit.py
+      - research/experiments/h3_googl_monthly_ablation.py
       - .github/workflows/h3_googl_research.yml
   workflow_dispatch:
 jobs:
@@ -19,9 +20,12 @@ jobs:
       - run: python -m pip install -e '.[dev]'
       - run: python research/experiments/h3_googl_cross_asset.py --outdir research/results/h3_googl_cross_asset_run
       - run: python research/experiments/h3_googl_fast_opportunity_audit.py --outdir research/results/h3_googl_cross_asset_run
+      - run: python research/experiments/h3_googl_monthly_ablation.py --outdir research/results/h3_googl_monthly_ablation_run
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: h3-googl-cross-asset
-          path: research/results/h3_googl_cross_asset_run/
+          path: |
+            research/results/h3_googl_cross_asset_run/
+            research/results/h3_googl_monthly_ablation_run/
           if-no-files-found: warn
