@@ -1,0 +1,2 @@
+version,start,end,initial_cash,end_equity,cagr,mdd,completed_trades,wins,losses,payoff,exposure,open_position_entry,extra_h3_fast_completed
+H3_NEGATIVE_ACCELERATING_MONTH_EMA5_FAST,2000-01-03,2026-07-13,100000,1323429.0451020638,0.10227396721750526,-0.2429991081991566,58,25,33,5.390464585153508,0.6749625187406297,2026-04-10,21
