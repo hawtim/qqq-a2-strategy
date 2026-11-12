@@ -24,6 +24,8 @@ FIELDS = [
     "id", "entry_date", "exit_date", "entry_source", "entry_kind",
     "status", "hold_sessions", "trade_net_return_pct",
     "cutoff_unrealized_price_return_pct", "max_close_floating_loss_pct",
+    "max_close_floating_gain_pct", "max_intraday_floating_gain_pct",
+    "best_close_date", "best_intraday_date",
     "max_intraday_floating_loss_pct", "max_adverse_including_exit_open_pct",
     "worst_close_date", "worst_intraday_date",
     "max_peak_close_to_later_close_dd_pct", "peak_close_date_before_dd",
@@ -67,6 +69,19 @@ def audit_trade(prices: pd.DataFrame, trade: dict, *, cutoff: str,
     lowest_close = float(closes.min())
     lowest_low_date = str(low.idxmin())
     lowest_close_date = str(closes.idxmin())
+    highs = interval.adj_high.astype(float)
+    highest_high = float(highs.max())
+    highest_close_observed = float(closes.max())
+    highest_high_date = str(highs.idxmax())
+    highest_close_date = str(closes.idxmax())
+    if highest_high + 1e-8 < highest_close_observed:
+        raise AssertionError("Intraday high cannot be below day close")
+    # Do not clamp the closing maximum: the frozen ledger's 'mfe_close'
+    # can be negative when all completed holding closes are below entry.
+    if not is_open:
+        original_mfe = float(trade["mfe_close"])
+        if abs(highest_close_observed / start_price - 1 - original_mfe) > 1e-8:
+            raise ValueError(f"Original ledger closing MFE mismatch: {entry_date}")
     if lowest_low > lowest_close + 1e-8:
         raise AssertionError("Intraday low cannot exceed day close")
     if not is_open:
@@ -117,6 +132,14 @@ def audit_trade(prices: pd.DataFrame, trade: dict, *, cutoff: str,
             if is_open else ""),
         "max_close_floating_loss_pct":
             _pct(min(0., lowest_close / start_price - 1)),
+        # MFE high is the maximum profit a trader could have *seen* on
+        # an intraday mark. It is NOT a fillable backtest price.
+        "max_close_floating_gain_pct":
+            _pct(highest_close_observed / start_price - 1),
+        "max_intraday_floating_gain_pct":
+            _pct(max(0., highest_high / start_price - 1)),
+        "best_close_date": highest_close_date,
+        "best_intraday_date": highest_high_date,
         "max_intraday_floating_loss_pct":
             _pct(min(0., lowest_low / start_price - 1)),
         "max_adverse_including_exit_open_pct":
