@@ -40,7 +40,7 @@ def sample():
     ma10[21:27] = [119.] * 6
     ma10[27:] = [122.] * (45-27)
     return pd.DataFrame({
-        "Date": days, "adj_open": [100.] * 45,
+        "Date": days, "adj_open": c,
         "adj_high": [v+2 for v in c],
         "adj_low": [v-2 for v in c],
         "adj_close": c,
@@ -93,8 +93,13 @@ class H3TrendSpreadQuickReentryTests(unittest.TestCase):
 
     def test_no_signal_when_spread_is_not_extended(self):
         x = sample()
-        rule = replay(x, "FAST_DEATH_RE_EMA5_10_D2_5", CFG)
-        self.assertFalse(rule["stats"]["active_position_at_end"] is False)
+        rule = replay_gated(
+            x, ENTRY_GATE, config=CFG, **V3_PARAMETERS,
+            defer_rejected_fast=True,
+            fast_negative_month_mode="accelerating",
+            trend_spread_atr_min=1000,
+            trend_spread_reentry="ema5_10_gold")
+        self.assertTrue(rule["stats"]["active_position_at_end"])
         self.assertEqual(len(rule["trades"]), 0)
 
     def test_no_trade_activated_without_prior_10pct_profit(self):
