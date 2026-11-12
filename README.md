@@ -7,6 +7,11 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+### H3 独立研究：慢线 EMA20/60 距离拉开后提前止盈、快速重新入场（2026-11-12）
+
+- [完整规则、13 组方案、QQQ/SPY 账户回测与失败案例](docs/research/V3_1_H3_慢线距离扩张_快速止盈重入_2026-11-12.md) · [26 行全方案对照结果 CSV](research/results/v3_1_h3_trend_spread_2026_07_13/qqq_spy_all_arms.csv) · [本地复算入口](research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py)。
+- **结论：暂不采用。** 当 EMA20/60 距离达到或曾在最近 40 日达到 ATR 归一化阈值后，使用 EMA10/20 死叉或更早动能收窄止盈，再用 EMA5/10 或 EMA10/20 金叉重入，**没有一组同时跑赢冻结 H3 的 QQQ 与 SPY**；通常损失强趋势持仓时间、增加交易频率，MDD 改善有限。这是样本内研究，不是未来预测；`main` 与原 H3 默认规则不变。
+
 ### QQQ V3.1-H3 交易地图：七段周 K、58 笔完整交易与提前 FAST 标记（研究候选）
 
 [![QQQ V3.1-H3：2000–2026/07 七段周 K 线、全部 58 笔成交、21 笔 H3 专属 FAST 与一笔未平仓交易](assets/a2_ema_v3_1_h3_trade_map_2000_2026_07.svg)](assets/a2_ema_v3_1_h3_trade_map_2000_2026_07.svg)
