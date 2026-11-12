@@ -28,6 +28,7 @@ class H3RiskAuditTests(unittest.TestCase):
         df = pd.DataFrame({
             "Date": pd.bdate_range("2024-01-02", periods=4),
             "adj_open": [100., 102., 98., 90.],
+            "adj_high": [102., 106., 104., 90.],
             "adj_low": [96., 94., 91., 5.],  # 5 on SELL day must be ignored
             "adj_close": [101., 105., 93., 20.],
         })
