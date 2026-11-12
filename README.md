@@ -7,6 +7,12 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+### H3 新研究：盈利快线死叉卖出，等待慢线收敛＋快线再金叉（2026-11-12）
+
+- [完整事件分布、15 组账户对照与案例归因](docs/research/V3_1_H3_盈利快死叉退出_慢线收敛后快金叉重入_2026-11-12.md) · [所有方案收益/回撤 CSV](research/results/v3_1_h3_ma_spread_2026_11_11/summary.csv) · [60 笔峰值均线间距](research/results/v3_1_h3_ma_spread_2026_11_11/peak_geometry.csv) · [31 笔首次盈利快死叉事件](research/results/v3_1_h3_ma_spread_2026_11_11/first_profitable_fast_death_geometry.csv) · [Python 研究复算入口](research/experiments/a2_v3_1_h3_fast_death_slow_reconvergence.py)。
+- **实测距离：** 28 笔曾有≥10%最高收盘浮盈的 H3 交易，最高收盘日 EMA10/20 正向间距中位 **+1.22%**，EMA20/60 正向间距中位 **+3.21%**。31 笔首次出现盈利快线死叉时，EMA20/60 仍相差中位 **+2.21%**（25～75%分位 +1.83～+2.99%）。高利润日的短均线**相对靠近**不等于已经接近金叉/死叉。
+- **结论：暂不升级。** 利润仍为正时快死叉退出、慢线缩到≤1%才再快金叉买回：QQQ 全周期 CAGR **9.89%→7.59%**，MDD **−24.30%→−23.94%**；若曾有≥10%浮盈才启动、慢线放宽至≤2%，CAGR 也仅 **9.12%**。历史专属重入普遍比退出价更贵（慢线≤2%方案 **17/17** 次买回更贵）。V3、H3 默认信号与正式主分支均不改变；原始行情不重分发。
+
 ### H3 新研究：部分减仓与快速补回，不再强制全仓离场（2026-11-12）
 
 - [详细规则、20 组 QQQ/SPY 对照、订单及历史分段归因](docs/research/V3_1_H3_慢线距离_部分减仓_快速补回_2026-11-12.md) · [完整汇总 CSV](research/results/v3_1_h3_partial_hedge_2026_07_13/qqq_spy_partial_reduction_summary.csv) · [50% 减仓/补回实际订单](research/results/v3_1_h3_partial_hedge_2026_07_13/trim_restore_events_50pct.csv) · [原生本地回测入口](research/experiments/a2_v3_1_h3_partial_position.py)。
