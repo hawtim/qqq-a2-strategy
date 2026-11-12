@@ -1,0 +1,37 @@
+{
+  "version": "H3_NEGATIVE_ACCELERATING_MONTH_EMA5_FAST",
+  "start": "2000-01-03",
+  "end": "2026-11-11",
+  "initial_capital": 100000,
+  "ending_equity": 1257933.89348445,
+  "cagr": 0.09887195917884917,
+  "max_drawdown": -0.24299910819915604,
+  "completed_trades": 60,
+  "wins": 26,
+  "losses": 34,
+  "avg_winner": 0.15769140370516244,
+  "avg_loser": -0.029117305790318307,
+  "payoff": 5.415727843803318,
+  "exposure": 0.6746595618709296,
+  "position_status": "FLAT",
+  "pending_order": "NONE",
+  "last_close_raw": 690.38,
+  "new_sessions": 86,
+  "total_sessions": 6963,
+  "baseline_check": "58 trades at 2026-07-13 and equity 1323429.0451020633; all 58 signal and execution dates/reasons reconcile",
+  "adjustment": {
+    "pre_sep21_rebase_factor": 0.9989609457128912,
+    "post_sep21_factor": 1,
+    "ex_dividend_date": "2026-09-21",
+    "dividend_qqq_usd": 0.7514
+  },
+  "sources": [
+    "https://github.com/jtang25/Stock-Market-Index-Daily-Return-Distribution-/blob/main/QQQ.csv",
+    "https://github.com/jameswdonoghue/QQQ-Data/blob/main/QQQ.csv",
+    "Alpha Vantage TIME_SERIES_DAILY QQQ compact 100 completed daily bars retrieved 2026-11-12",
+    "https://stockanalysis.com/etf/qqq/history/",
+    "repo docs/DATA_SOURCES.md 2026-11-10 July-Nov vendor adjusted overlap study"
+  ],
+  "data_rights": "Derived trading records only; raw OHLCV are not republished",
+  "paper_only": true
+}
