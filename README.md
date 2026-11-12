@@ -7,6 +7,12 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+### H3 新研究：部分减仓与快速补回，不再强制全仓离场（2026-11-12）
+
+- [详细规则、20 组 QQQ/SPY 对照、订单及历史分段归因](docs/research/V3_1_H3_慢线距离_部分减仓_快速补回_2026-11-12.md) · [完整汇总 CSV](research/results/v3_1_h3_partial_hedge_2026_07_13/qqq_spy_partial_reduction_summary.csv) · [50% 减仓/补回实际订单](research/results/v3_1_h3_partial_hedge_2026_07_13/trim_restore_events_50pct.csv) · [原生本地回测入口](research/experiments/a2_v3_1_h3_partial_position.py)。
+- **结果：** 最近 40 日 EMA20/60 距离峰值≥2.5 ATR + 历史收盘浮盈≥10% + EMA10/20 死叉时**减半仓**、EMA5/10 金叉恢复：QQQ CAGR **10.23%→10.42%**，MDD **−24.30%→−23.94%**；SPY CAGR **8.22%→7.33%**，MDD 不变。QQQ 订单数 **117→172**；仅样本内微幅改善，不足以正式采用。
+- **关键机制：** 同一 QQQ 方案的 **20 次补回全部比减仓价格更贵**，但 15 次减仓一直保持到原始 H3 退出，其中 14 次原最终退出价格更低。这个实验可能只在特定末段回撤中更早减风险，而不是普遍能够卖高买低。主策略不变。
+
 ### H3 独立研究：慢线 EMA20/60 距离拉开后提前止盈、快速重新入场（2026-11-12）
 
 - [完整规则、13 组方案、QQQ/SPY 账户回测与失败案例](docs/research/V3_1_H3_慢线距离扩张_快速止盈重入_2026-11-12.md) · [26 行全方案对照结果 CSV](research/results/v3_1_h3_trend_spread_2026_07_13/qqq_spy_all_arms.csv) · [本地复算入口](research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py)。
