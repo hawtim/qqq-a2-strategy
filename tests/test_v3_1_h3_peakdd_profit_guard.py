@@ -102,7 +102,7 @@ class H3PeakDdTests(unittest.TestCase):
             self.assertGreaterEqual(float(r["max_intraday_floating_gain_pct"]), 0.)
             self.assertTrue(r["best_intraday_date"])
         self.assertEqual(risk[-1]["status"], "OPEN")
-        root = ET.parse(ROOT / "assets/a2_ema_v3_1_h3_trade_map_2000_2026_07.svg").getroot()
+        root = ET.parse(ROOT / "assets/a2_ema_v3_1_h3_trade_map_2000_2026_07_frozen.svg").getroot()
         ns={"s": "http://www.w3.org/2000/svg"}
         strs="".join("".join(z.itertext()) for z in root.findall(".//s:text",ns))
         self.assertIn("MFE high",strs)
