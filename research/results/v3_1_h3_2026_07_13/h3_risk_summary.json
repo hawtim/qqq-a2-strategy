@@ -1,0 +1,71 @@
+{
+  "allClosed": {
+    "n": 58,
+    "medianMaxFloatLowPct": -2.5559000000000003,
+    "medianMaxFloatClosePct": -1.676,
+    "medianPeakCloseDDPct": -7.6678999999999995,
+    "worstFloatLowPct": -10.6476,
+    "worstPeakCloseDDPct": -18.318,
+    "nFloatAtLeast5": 10,
+    "nFloatAtLeast10": 1,
+    "nPeakDDAtLeast10": 13
+  },
+  "h3Only": {
+    "n": 21,
+    "medianMaxFloatLowPct": -2.6311,
+    "medianMaxFloatClosePct": -2.2099,
+    "medianPeakCloseDDPct": -8.6179,
+    "worstFloatLowPct": -10.6476,
+    "worstPeakCloseDDPct": -14.7285,
+    "nFloatAtLeast5": 4,
+    "nFloatAtLeast10": 1,
+    "nPeakDDAtLeast10": 7
+  },
+  "winners": {
+    "n": 25,
+    "medianMaxFloatLowPct": -0.8651,
+    "medianMaxFloatClosePct": -0.117,
+    "medianPeakCloseDDPct": -8.5212,
+    "worstFloatLowPct": -6.2134,
+    "worstPeakCloseDDPct": -18.318,
+    "nFloatAtLeast5": 1,
+    "nFloatAtLeast10": 0,
+    "nPeakDDAtLeast10": 7
+  },
+  "losers": {
+    "n": 33,
+    "medianMaxFloatLowPct": -4.1302,
+    "medianMaxFloatClosePct": -2.7441,
+    "medianPeakCloseDDPct": -5.7041,
+    "worstFloatLowPct": -10.6476,
+    "worstPeakCloseDDPct": -13.5788,
+    "nFloatAtLeast5": 9,
+    "nFloatAtLeast10": 1,
+    "nPeakDDAtLeast10": 6
+  },
+  "open": {
+    "id": 59,
+    "entry_date": "2026-04-10",
+    "exit_date": "OPEN (2026-07-13)",
+    "entry_source": "H3_ACCEL",
+    "entry_kind": "FAST_EMA10_20_MONTH_EMA5",
+    "status": "OPEN",
+    "hold_sessions": 64,
+    "trade_net_return_pct": "",
+    "cutoff_unrealized_price_return_pct": 16.4556,
+    "max_close_floating_loss_pct": -0.1259,
+    "max_intraday_floating_loss_pct": -0.6096,
+    "max_adverse_including_exit_open_pct": -0.6096,
+    "worst_close_date": "2026-04-10",
+    "worst_intraday_date": "2026-04-13",
+    "max_peak_close_to_later_close_dd_pct": -7.032,
+    "peak_close_date_before_dd": "2026-06-02",
+    "trough_close_date_for_dd": "2026-06-10",
+    "exit_open_was_worse_than_held_intraday_low": ""
+  },
+  "data_cutoff": "2026-07-13",
+  "close_float_reconciled_to_h3_ledger": true,
+  "source_overlap": 2439,
+  "source_rebase": 0.9758811548309515,
+  "definition": "Floating loss is minimum observed adjusted LOW / adjusted next-open entry - 1, excluding post-exit bars; close floating loss matches ledger mae_close. Peak-to-close giveback: max drop from preceding highest held adjusted close (initial peak=entry-open), evaluated on held closes and exit-open. Percent figures exclude transaction fees except net realized P/L."
+}
