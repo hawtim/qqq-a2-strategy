@@ -142,7 +142,8 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                  trend_spread_atr_min: float | None = None,
                  trend_spread_exit: str = "fast_death",
                  trend_spread_reentry: str = "none",
-                 trend_spread_min_gain: float = .10) -> dict:
+                 trend_spread_min_gain: float = .10,
+                 trend_spread_lookback: int = 1) -> dict:
     """Dedicated research replay; no changes to baseline N20/trend exits.
 
     The *original* gold signal is used for in-position trend confirmation;
@@ -162,6 +163,8 @@ def replay_gated(signals: pd.DataFrame, variant: str,
         raise ValueError("Invalid spread exit")
     if trend_spread_reentry not in ("none", "ema10_20_gold", "ema5_10_gold"):
         raise ValueError("Invalid spread re-entry")
+    if not isinstance(trend_spread_lookback, int) or not 1 <= trend_spread_lookback <= 250:
+        raise ValueError("Trend spread lookback must be 1–250 complete sessions")
     if trend_spread_atr_min is not None and trend_spread_atr_min < 0:
         raise ValueError("Spread/ATR threshold must be nonnegative")
     if trend_spread_atr_min is not None and not 0 < trend_spread_min_gain < 1:
@@ -209,6 +212,10 @@ def replay_gated(signals: pd.DataFrame, variant: str,
         ], axis=1).max(axis=1)
         df["spread_atr20"] = true_range.rolling(20, min_periods=20).mean()
         df["spread_in_atr"] = (df.ma20 - df.ma60) / df.spread_atr20
+        # The maximum is over completed trading days, including today's
+        # close. A 40-day lookback may include dates before this entry.
+        df["spread_lookback_max"] = df.spread_in_atr.rolling(
+            trend_spread_lookback, min_periods=1).max()
         # Strictly past-or-present closing-bar features: no future K lines.
         if trend_spread_exit == "early_narrow":
             spread = df.ma10 - df.ma20
@@ -410,8 +417,8 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                            "reason": f"entry-day close <= -{entry_day_close_guard * 100:g}%"}
             elif trend_spread_atr_min is not None and (
                     float(row.ma20) > float(row.ma60) and
-                    pd.notna(row.spread_in_atr) and
-                    float(row.spread_in_atr) >= trend_spread_atr_min and
+                    pd.notna(row.spread_lookback_max) and
+                    float(row.spread_lookback_max) >= trend_spread_atr_min and
                     position["profit_guard_peak_close"] >=
                     position["entry_price"] * (1 + trend_spread_min_gain)):
                 # Compare fast death and earlier three-day spread narrowing.
