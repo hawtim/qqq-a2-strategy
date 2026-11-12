@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "research" / "experiments"))
 from a2_v3_1_h3_trade_risk_audit import audit_trade
 
 DIRECTORY = ROOT / "research/results/v3_1_h3_2026_07_13"
-SVG = ROOT / "assets/a2_ema_v3_1_h3_trade_map_2000_2026_07.svg"
+SVG = ROOT / "assets/a2_ema_v3_1_h3_trade_map_2000_2026_07_frozen.svg"
 NS = {"s": "http://www.w3.org/2000/svg"}
 
 
