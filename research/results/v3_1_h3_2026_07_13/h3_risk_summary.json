@@ -67,5 +67,49 @@
   "close_float_reconciled_to_h3_ledger": true,
   "source_overlap": 2439,
   "source_rebase": 0.9758811548309515,
-  "definition": "Floating loss is minimum observed adjusted LOW / adjusted next-open entry - 1, excluding post-exit bars; close floating loss matches ledger mae_close. Peak-to-close giveback: max drop from preceding highest held adjusted close (initial peak=entry-open), evaluated on held closes and exit-open. Percent figures exclude transaction fees except net realized P/L."
+  "definition": "Floating loss is minimum observed adjusted LOW / adjusted next-open entry - 1, excluding post-exit bars; close floating loss matches ledger mae_close. Peak-to-close giveback: max drop from preceding highest held adjusted close (initial peak=entry-open), evaluated on held closes and exit-open. Percent figures exclude transaction fees except net realized P/L.",
+  "maximum_favorable_excursion": {
+    "allClosed": {
+      "n": 58,
+      "medianHighMfePct": 8.3056,
+      "medianCloseMfePct": 7.757099999999999,
+      "maxHighMfePct": 92.536,
+      "medianPeakDDPct": -7.6678999999999995,
+      "floatingGain10plus": 27,
+      "peakDD10plus": 13
+    },
+    "h3Only": {
+      "n": 21,
+      "medianHighMfePct": 11.5102,
+      "medianCloseMfePct": 11.3435,
+      "maxHighMfePct": 92.536,
+      "medianPeakDDPct": -8.6179,
+      "floatingGain10plus": 11,
+      "peakDD10plus": 7
+    },
+    "winners": {
+      "n": 25,
+      "medianHighMfePct": 20.8702,
+      "medianCloseMfePct": 20.3412,
+      "maxHighMfePct": 92.536,
+      "medianPeakDDPct": -8.5212,
+      "floatingGain10plus": 22,
+      "peakDD10plus": 7
+    },
+    "losers": {
+      "n": 33,
+      "medianHighMfePct": 2.3781,
+      "medianCloseMfePct": 1.3897,
+      "maxHighMfePct": 11.9472,
+      "medianPeakDDPct": -5.7041,
+      "floatingGain10plus": 5,
+      "peakDD10plus": 6
+    },
+    "open": {
+      "entry": "2026-04-10",
+      "close": 21.9534,
+      "high": 22.3604
+    },
+    "definition": "MFE high uses greatest adjusted intraday HIGH during held days, excludes sale-day post-open prices; closing MFE uses maximum adjusted held CLOSE and reconciles frozen trade ledger mfe_close. Peak DD uses causal high-water closing marks, not today's future peak."
+  }
 }
