@@ -7,6 +7,18 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+### QQQ V3.1-H3 交易地图：七段周 K、58 笔完整交易与提前 FAST 标记（研究候选）
+
+[![QQQ V3.1-H3：2000–2026/07 七段周 K 线、全部 58 笔成交、21 笔 H3 专属 FAST 与一笔未平仓交易](assets/a2_ema_v3_1_h3_trade_map_2000_2026_07.svg)](assets/a2_ema_v3_1_h3_trade_map_2000_2026_07.svg)
+
+- **数据区间：** 2000-01-03～2026-07-13，初始 $100,000，单边手续费 0.05%，日线收盘信号、下一交易日开盘成交；周 K **只用于展示**。
+- **H3 样本内账户：** 期末权益 **$1,323,429**（含最后一笔仍持有的头寸），CAGR **10.23%**，日末 MDD **−24.30%**；**58 笔已平仓**（25 盈 / 33 亏）、另有 **1 笔 2026-04-10 买入且截至 07-13 未平仓**。
+- **图中买点：** 蓝色常规入场、青色原有 FAST、绿色 **H3「上两个完整月 EMA5 斜率均负且最近更负」豁免触发的 FAST**。21 笔 H3 专属 FAST 已平仓；最后一笔未平仓也是 H3 FAST，不纳入 58 笔已平仓统计。
+- **退出标记：** 橙色 N20、深橙色 N20 到第 30 日、紫色 EMA20/60 死叉、红色首日 3% 保护或净亏损 7% 收盘止损；均以**下一开盘价**成交，可能遇到跳空。
+- **核查数据：** [58 笔完整衍生交易账本](research/results/v3_1_h3_2026_07_13/h3_trades.csv) · [完整汇总及未平仓日期](research/results/v3_1_h3_2026_07_13/summary.csv) · [21 笔 H3 FAST 与 A 同窗口归因](docs/research/V3_1_H3_21笔FAST与A逐笔同窗口归因_2026-11-12.md)。测试：`python -m unittest tests.test_v3_1_h3_trade_map -v`。
+
+**版本边界：** 这是 H3 探索性反向条件的历史图，尚未选定正式策略，也不是 2026-11-09 的 V3 图；这两个截止日期和账本不可混合。原 `main` 的 V3 SVG 不变。原始行情（OHLCV）未经授权不在本仓库发布。
+
 > A frozen baseline + reproducible backtest + complete good/bad case ledger + experimental branches.  
 > **研究与模拟跟踪用途。没有券商交易接口，不会自动下单。**
 
