@@ -62,6 +62,36 @@ ARMS = {
         "trend_spread_exit": "fast_death",
         "trend_spread_reentry": "ema5_10_gold",
     },
+    "PEAK40_1_5_FAST_DEATH_RE_EMA5_10": {
+        "trend_spread_atr_min": 1.5,
+        "trend_spread_lookback": 40,
+        "trend_spread_exit": "fast_death",
+        "trend_spread_reentry": "ema5_10_gold",
+    },
+    "PEAK40_2_5_FAST_DEATH_RE_EMA5_10": {
+        "trend_spread_atr_min": 2.5,
+        "trend_spread_lookback": 40,
+        "trend_spread_exit": "fast_death",
+        "trend_spread_reentry": "ema5_10_gold",
+    },
+    "PEAK40_2_5_FAST_DEATH_RE_EMA10_20": {
+        "trend_spread_atr_min": 2.5,
+        "trend_spread_lookback": 40,
+        "trend_spread_exit": "fast_death",
+        "trend_spread_reentry": "ema10_20_gold",
+    },
+    "PEAK40_2_5_EARLY_NARROW_RE_EMA5_10": {
+        "trend_spread_atr_min": 2.5,
+        "trend_spread_lookback": 40,
+        "trend_spread_exit": "early_narrow",
+        "trend_spread_reentry": "ema5_10_gold",
+    },
+    "PEAK40_1_5_EARLY_NARROW_RE_EMA5_10": {
+        "trend_spread_atr_min": 1.5,
+        "trend_spread_lookback": 40,
+        "trend_spread_exit": "early_narrow",
+        "trend_spread_reentry": "ema5_10_gold",
+    },
 }
 KNOWN_BASE = {
     ("QQQ", "2026-07-13"): (1323429.0451020633, -.2429991081991566, 58),
@@ -134,6 +164,7 @@ def main() -> None:
         "source": provenance, "versions": ARMS,
         "reference": "H3_FROZEN (no experimental flags)",
         "max_atr_spread": "(EMA20 - EMA60) / ATR20",
+        "lookback_40": "maximum normalized spread over the trailing 40 completed daily sessions, including current session; may predate trade entry",
         "profit_activation": "prior highest held closing mark >= entry open * 1.10",
         "early_narrow": "3 consecutive daily decreases in EMA10-EMA20 spread + price below EMA10 + EMA10 below its value 3 days ago",
         "fast_death": "daily EMA10 crosses below EMA20 on complete closing bar",
