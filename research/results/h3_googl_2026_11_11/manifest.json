@@ -1,0 +1,28 @@
+{
+  "symbol": "GOOGL",
+  "security": "Alphabet Inc Class A; pre-2014-04-03 same Class A originally GOOG",
+  "period": {"start": "2004-08-19", "end": "2026-11-11", "complete_daily_bars": 5594},
+  "source": {
+    "provider": "Yahoo Finance chart API",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?period1=1092787200&period2=1794441600&interval=1d&events=div%2Csplits&includeAdjustedClose=true",
+    "retrieved_at_utc": "2026-11-12T16:49:20Z",
+    "sha256": "87c50c843999c4fb55ed01fe5eb8a515765cc67022be80d5be00ae36caed36f1",
+    "adjustment": "adj_close/close applied proportionally to OHLC",
+    "max_calendar_gap_days": 5,
+    "last_unadjusted_close": 293.45001220703125,
+    "raw_ohlcv_committed": false
+  },
+  "strategy": "H3_FROZEN / H3_NEGATIVE_ACCELERATING_MONTH_EMA5_FAST",
+  "unchanged_engine": "research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py replay(signals, H3_FROZEN)",
+  "cross_ticker_runner": "research/experiments/h3_googl_cross_asset.py",
+  "parameter_changes": {},
+  "initial_cash": 100000,
+  "fee_per_side": 0.0005,
+  "cash_interest": 0,
+  "tax_and_slippage": "excluded",
+  "fill": "closed-bar signal, next normal session open",
+  "state_at_end": "FLAT; no pending order",
+  "workflow_run": "https://github.com/hawtim/qqq-a2-strategy/actions/runs/43262766598",
+  "artifact": "https://github.com/hawtim/qqq-a2-strategy/actions/runs/43262766598/artifacts/13963834223",
+  "scientific_limit": "Single-company in-sample cross-asset test; selection and survivorship bias possible"
+}
