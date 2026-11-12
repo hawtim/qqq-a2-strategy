@@ -134,7 +134,11 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                  extended_n20_days: int = 30,
                  defer_rejected_fast: bool = False,
                  fast_negative_month_mode: str = "none",
-                 deferred_fast_slow_state: str = "any") -> dict:
+                 deferred_fast_slow_state: str = "any",
+                 profit_trail_pct: float | None = None,
+                 profit_min_gain: float = .10,
+                 profit_atr_mult: float | None = None,
+                 profit_confirmation: str = "none") -> dict:
     """Dedicated research replay; no changes to baseline N20/trend exits.
 
     The *original* gold signal is used for in-position trend confirmation;
@@ -150,6 +154,16 @@ def replay_gated(signals: pd.DataFrame, variant: str,
     if ((fast_negative_month_mode != "none" or
          deferred_fast_slow_state != "any") and not defer_rejected_fast):
         raise ValueError("Regime experiments require deferred FAST enabled")
+    if profit_trail_pct is not None and not 0 < profit_trail_pct < 1:
+        raise ValueError("Invalid profit trail percent")
+    if profit_atr_mult is not None and not profit_atr_mult > 0:
+        raise ValueError("Invalid ATR multiple")
+    if profit_trail_pct is not None and profit_atr_mult is not None:
+        raise ValueError("Use a percentage OR ATR profit trail, not both")
+    if (profit_trail_pct is not None or profit_atr_mult is not None) and not 0 < profit_min_gain < 1:
+        raise ValueError("Invalid minimum favorable profit")
+    if profit_confirmation not in ("none", "below_ema20", "fast_death"):
+        raise ValueError("Unsupported profit-trail confirmation")
     if hard_stop_fill not in ("next_open", "same_close_oracle"):
         raise ValueError("Invalid stop fill model")
     if not 0 <= close_fill_adverse_slippage < 1:
@@ -170,6 +184,16 @@ def replay_gated(signals: pd.DataFrame, variant: str,
         raise ValueError("Invalid intraday stop slippage")
     gate_col = "gate_" + variant
     df = signals.sort_values("Date").reset_index(drop=True)
+    # Historical research-only ATR20: today's complete bar is available
+    # only after close. No current/next intraday high or low informs an exit.
+    if profit_atr_mult is not None:
+        prev_close = df.adj_close.shift(1)
+        true_range = pd.concat([
+            df.adj_high - df.adj_low,
+            (df.adj_high - prev_close).abs(),
+            (df.adj_low - prev_close).abs(),
+        ], axis=1).max(axis=1)
+        df["profit_guard_atr20"] = true_range.rolling(20, min_periods=20).mean()
     cash, shares, position, pending = float(config.initial_cash), 0., None, None
     eligible_fast, deferred_gold, deferred_fast = False, False, False
     ledger, curve = [], []
@@ -195,6 +219,8 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                         str(df.iloc[i - 1].Date.date()) if confirmed else None),
                     "max_close": float(row.adj_close),
                     "min_close": float(row.adj_close),
+                    # Only the running past closing high, known as of each day.
+                    "profit_guard_peak_close": entry,
                     "n20_extension_qualified": False,
                 }
                 cash, eligible_fast, deferred_gold, deferred_fast = 0., False, False, False
@@ -341,6 +367,32 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                   (1 - entry_day_close_guard)):
                 pending = {"side": "sell", "signal_date": day,
                            "reason": f"entry-day close <= -{entry_day_close_guard * 100:g}%"}
+            elif (profit_trail_pct is not None or profit_atr_mult is not None):
+                past_peak = position["profit_guard_peak_close"]
+                gain = past_peak / position["entry_price"] - 1
+                close = float(row.adj_close)
+                if profit_atr_mult is None:
+                    drawdown_trigger = close <= past_peak * (1 - profit_trail_pct)
+                else:
+                    atr = float(row.profit_guard_atr20)
+                    drawdown_trigger = pd.notna(atr) and past_peak - close >= profit_atr_mult * atr
+                confirm = (
+                    profit_confirmation == "none" or
+                    (profit_confirmation == "below_ema20" and close < float(row.ma20)) or
+                    (profit_confirmation == "fast_death" and bool(row.protect_cross))
+                )
+                if gain >= profit_min_gain and drawdown_trigger and confirm:
+                    label = (f"{profit_trail_pct * 100:g}%"
+                             if profit_trail_pct is not None
+                             else f"{profit_atr_mult:g}ATR")
+                    pending = {
+                        "side": "sell", "signal_date": day,
+                        "reason": f"research profit giveback {label} + {profit_confirmation}",
+                    }
+            # Update only after checks: the signal cannot know a future peak.
+            if position is not None and shares:
+                position["profit_guard_peak_close"] = max(
+                    position["profit_guard_peak_close"], float(row.adj_close))
         else:
             if bool(row.death):
                 deferred_gold = False
