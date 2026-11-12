@@ -132,7 +132,9 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                  intraday_adverse_slippage: float = 0.,
                  regular_n20_extension: str = "none",
                  extended_n20_days: int = 30,
-                 defer_rejected_fast: bool = False) -> dict:
+                 defer_rejected_fast: bool = False,
+                 fast_negative_month_mode: str = "none",
+                 deferred_fast_slow_state: str = "any") -> dict:
     """Dedicated research replay; no changes to baseline N20/trend exits.
 
     The *original* gold signal is used for in-position trend confirmation;
@@ -141,6 +143,13 @@ def replay_gated(signals: pd.DataFrame, variant: str,
     """
     if variant not in VARIANTS:
         raise ValueError("Unknown variant: " + variant)
+    if fast_negative_month_mode not in ("none", "decelerating", "accelerating"):
+        raise ValueError("Invalid negative-month FAST experiment")
+    if deferred_fast_slow_state not in ("any", "bull", "bear"):
+        raise ValueError("Invalid delayed FAST slow trend filter")
+    if ((fast_negative_month_mode != "none" or
+         deferred_fast_slow_state != "any") and not defer_rejected_fast):
+        raise ValueError("Regime experiments require deferred FAST enabled")
     if hard_stop_fill not in ("next_open", "same_close_oracle"):
         raise ValueError("Invalid stop fill model")
     if not 0 <= close_fill_adverse_slippage < 1:
@@ -350,7 +359,30 @@ def replay_gated(signals: pd.DataFrame, variant: str,
                         (not bool(row.prev_completed_month_ema5_up)
                          or not bool(row[gate_col]))):
                     deferred_fast = True
-            fast = (eligible_fast and bool(row.prev_completed_month_ema5_up)
+            # Independent H1 research: negative completed-month EMA5 slope
+            # may be improving (less negative) or accelerating (more negative).
+            # The acceleration arm is a negative control, not a chosen rule.
+            # All monthly inputs are from completed months only.
+            negative_relief = False
+            if fast_negative_month_mode != "none":
+                cur = float(row.known_slope_abs)
+                prev = float(row.known_prev_abs)
+                if cur < 0 and prev < 0:
+                    negative_relief = (
+                        cur > prev if fast_negative_month_mode == "decelerating"
+                        else cur < prev)
+            # H2 research: filter ONLY deferred FAST candidates; fresh valid
+            # crosses and regular EMA20/60 entries keep V3/V3.1 semantics.
+            waiting_fast = (defer_rejected_fast and deferred_fast
+                            and not bool(row.ema10_20_gold))
+            slow_bull = bool(row.ma20 > row.ma60)
+            slow_state_ok = (
+                not waiting_fast or deferred_fast_slow_state == "any"
+                or (deferred_fast_slow_state == "bull" and slow_bull)
+                or (deferred_fast_slow_state == "bear" and not slow_bull))
+            fast = (eligible_fast and slow_state_ok
+                    and (bool(row.prev_completed_month_ema5_up)
+                         or negative_relief)
                     and (bool(row.ema10_20_gold) or
                          (defer_rejected_fast and deferred_fast
                           and bool(row.ma10 > row.ma20))))
