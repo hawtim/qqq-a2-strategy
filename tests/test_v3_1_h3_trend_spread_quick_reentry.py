@@ -102,6 +102,29 @@ class H3TrendSpreadQuickReentryTests(unittest.TestCase):
         self.assertTrue(rule["stats"]["active_position_at_end"])
         self.assertEqual(len(rule["trades"]), 0)
 
+    def test_prior_40_day_stretch_is_not_current_day_stretch(self):
+        x = sample()
+        # Strongly separated EMA20/60 earlier, but nearly converged by
+        # the FAST death-cross day; long trend still EMA20 > EMA60.
+        x.loc[18:, "ma60"] = 119.
+        current = replay_gated(
+            x, ENTRY_GATE, config=CFG, **V3_PARAMETERS,
+            defer_rejected_fast=True,
+            fast_negative_month_mode="accelerating",
+            trend_spread_atr_min=2.5,
+            trend_spread_lookback=1,
+        )
+        history = replay_gated(
+            x, ENTRY_GATE, config=CFG, **V3_PARAMETERS,
+            defer_rejected_fast=True,
+            fast_negative_month_mode="accelerating",
+            trend_spread_atr_min=2.5,
+            trend_spread_lookback=40,
+        )
+        self.assertEqual(len(current["trades"]), 0)
+        self.assertEqual(len(history["trades"]), 1)
+        self.assertIn("research trend spread", history["trades"].iloc[0].exit_reason)
+
     def test_no_trade_activated_without_prior_10pct_profit(self):
         x = sample()
         x.loc[:, "adj_close"] = 100.
