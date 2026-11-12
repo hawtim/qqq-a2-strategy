@@ -67,7 +67,7 @@ class H3TrendSpreadQuickReentryTests(unittest.TestCase):
             defer_rejected_fast=True, fast_negative_month_mode="accelerating")
         pd.testing.assert_frame_equal(baseline["trades"], ref["trades"])
         pd.testing.assert_frame_equal(baseline["equity"], ref["equity"])
-        self.assertEqual(len(ARMS), 8)
+        self.assertEqual(len(ARMS), 13)
 
     def test_profit_exit_waits_until_full_close_and_next_open(self):
         x = sample()
