@@ -1,0 +1,4 @@
+date,type,monthGate,prev_month_up,month_slope,prev_month_slope,is_flat,entry_signal,entry_kind
+2026-08-03,EMA20/60_GOLD,false,true,1.0121935631673296,25.698152023262878,true,false,
+2026-08-06,EMA10/20_GOLD,false,true,1.0121935631673296,25.698152023262878,true,false,
+2026-09-01,DEFERRED_CONFIRM,true,true,10.254831178164864,1.0121935631673296,true,true,REGULAR_EMA20_60
