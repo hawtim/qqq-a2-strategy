@@ -1,0 +1,8 @@
+interval,flat_start,next_entry_date,entry_kind,fresh_fast_cross_dates,fresh_cross_count,no_first_exit_eligibility,monthly_slope_block,monthly_slowing_veto,deferred_fast_released_same_day_as_regular,root_cause
+IPO initial wait,2004-08-19,2005-05-03,REGULAR_EMA20_60,2004-12-14|2005-01-31|2005-04-06,3,3,2,1,false,No fast eligibility before first sell; monthly warmup and slowing-up veto
+2007 recovery,2007-08-22,2007-10-02,REGULAR_EMA20_60,2007-09-04,1,0,0,1,true,Monthly slowing-up veto; deferred FAST became actionable only simultaneous with regular
+2009 rebound,2009-01-20,2009-02-06,REGULAR_EMA20_60,2009-01-26,1,0,1,0,false,Completed monthly EMA5 slope negative but decelerating not accelerating
+2024 rebound,2024-03-06,2024-04-02,REGULAR_EMA20_60,2024-03-18,1,0,0,1,true,Monthly slowing-up veto; deferred FAST became actionable only simultaneous with regular
+2025 rebound,2025-05-12,2025-05-29,REGULAR_EMA20_60,2025-05-14,1,0,1,0,false,Completed monthly EMA5 slope negative but decelerating not accelerating
+2026 March-April,2026-03-09,2026-04-15,REGULAR_EMA20_60,2026-04-08,1,0,1,0,false,Completed monthly EMA5 slope crossed from positive to negative
+2026 July-October,2026-07-23,2026-10-14,REGULAR_EMA20_60,2026-08-04|2026-09-18|2026-09-30|2026-10-05,4,0,3,1,false,One slowing-up veto plus three monthly slope rejects
