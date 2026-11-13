@@ -329,6 +329,38 @@ def main():
         on="Date",suffixes=("","_h3"),validate="one_to_one")
     daily["RelativeWealth"]=daily.Equity/daily.Equity_h3
     daily.to_csv(out/"hybrid_vs_frozen_h3_daily_relative_wealth.csv",index=False)
+    # Event-accurate cash-window attribution, including next shadow-H3
+    # entry handoff at next OPEN / its corresponding close in both curves.
+    # This factors CASH-window added exposure, not the H3 held intervals.
+    daily["cash_spell_id"]=(daily.ShadowH3Invested.ne(
+                            daily.ShadowH3Invested.shift(1))).cumsum()
+    cash_impacts=[]
+    for cash_id,block in daily.loc[~daily.ShadowH3Invested].groupby("cash_spell_id"):
+        first=int(block.index[0]);last=int(block.index[-1])
+        before=float(daily.RelativeWealth.iloc[first-1]) if first>0 else 1.0
+        after=float(daily.RelativeWealth.iloc[last+1]
+                    if last+1<len(daily) else daily.RelativeWealth.iloc[last])
+        start=str(block.Date.iloc[0]);end=str(block.Date.iloc[-1])
+        cycle_fills=shadow_cash_fills.loc[
+            shadow_cash_fills.fill_date.between(start,end)]
+        cash_impacts.append({
+            "cash_spell_id":int(cash_id),"start":start,"end":end,
+            "next_original_h3_entry":str(daily.Date.iloc[last+1])
+                if last+1<len(daily) else "",
+            "cash_trading_days":len(block),
+            "extra_fast_buys":int(cycle_fills.action.eq("BUY").sum()),
+            "extra_fast_death_sells":int(cycle_fills.action.eq("SELL").sum()),
+            "relative_wealth_at_sp_start":before,
+            "relative_wealth_at_sp_end":after,
+            "incremental_relative_wealth_change_pct":100*(after/before-1),
+            "right_censored":bool(last==len(daily)-1),
+        })
+    cash_impacts=pd.DataFrame(cash_impacts)
+    cash_impacts.to_csv(out/"cash_spell_incremental_relative_wealth.csv",index=False)
+    print("FAST_CYCLE_CASH_SPELL_BEST",cash_impacts.sort_values(
+        "incremental_relative_wealth_change_pct",ascending=False).head(8).to_json(orient="records"))
+    print("FAST_CYCLE_CASH_SPELL_WORST",cash_impacts.sort_values(
+        "incremental_relative_wealth_change_pct").head(8).to_json(orient="records"))
     manifest={
         "sample":"QQQ", "start":START,"end":END,"provider":provenance,
         "baseline":"H3_FROZEN original native replay, shadow opens and exits fixed by original H3 full state machine",
