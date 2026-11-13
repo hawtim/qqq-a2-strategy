@@ -1,0 +1,27 @@
+name: H3 Weekly RV Entry Monthly Veto Ablation
+on:
+  push:
+    branches:
+      - research/v3-1-cross-asset-deferred-fast
+    paths:
+      - research/experiments/h3_weekly_realized_vol_month_veto_engine.py
+      - research/experiments/h3_qqq_completed_week_vol_month_veto_ablation.py
+      - .github/workflows/h3_weekly_realized_vol_month_veto.yml
+  workflow_dispatch:
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e '.[dev]'
+      - run: python research/experiments/h3_qqq_completed_week_vol_month_veto_ablation.py --outdir research/results/h3_qqq_weekly_rv_monthly_veto_2026_11_11
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h3-weekly-rv-month-veto-qqq-11-arm
+          path: research/results/h3_qqq_weekly_rv_monthly_veto_2026_11_11/
+          if-no-files-found: warn
