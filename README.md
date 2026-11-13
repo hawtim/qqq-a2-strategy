@@ -7,6 +7,8 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+**H3 QQQ R1-0/3/5 中周期恢复月线豁免完整回测（2026-11-13）**：[完整四组账户与交易分析](docs/research/H3_QQQ_R1_0_3_5_趋势恢复月线豁免_完整回测_2026-11-13.md) · [独立R1状态机](research/experiments/h3_r1_trend_recovery_override_engine.py) · [独立复算入口](research/experiments/h3_r1_0_3_5_trend_recovery_backtest.py) · [每日账户、全部真实新增交易、信号CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43380659195/artifacts/14016038896)。**R1-0/3/5 样本内 CAGR 分别9.53%/9.61%/9.46%，均低于原H3 9.89%；2014有改善但跨周期未成立。本研究不升级原H3、不触碰A/B v1.0。**
+
 **H3 QQQ 2010后入场月线拦截/EMA200逐层放宽（2026-11-13）**：[11组完整账户研究报告与失败案例](docs/research/H3_QQQ_月线入场放宽与EMA200分层_11组完整账户回测_2026-11-13.md) · [独立状态机副本](research/experiments/h3_month_gate_entry_relax_engine.py) · [回测入口](research/experiments/h3_entry_month_gate_ema200_ablation.py) · [完整CSV数据](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43377865867/artifacts/14015495295)。**全部月线放宽使QQQ MDD由−24.30%恶化至−38.92%；仅对新放行买点增加上升EMA200限制也无法同时改善CAGR与MDD。未修改原H3、A/B冻结规则。**
 
 **H3 QQQ 2010–2026 长期空仓与重新入场滞后（2026-11-13）**：[完整诊断报告：39段空仓/965日、38段已回补其中31段更贵，2010–14全部13段错过上涨、47次FAST金叉中32次受月线资格拒绝、保留2022熊市反证](docs/research/H3_QQQ_2010后空仓与FAST月线拦截_机会成本与风险归因_2026-11-13.md) · [全样本独立脚本](research/experiments/h3_qqq_post2010_flat_reentry_opportunity_audit.py) · [衍生数据CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43365280317/artifacts/14010142591)。本轮**只审计，不优化入场，不修改冻结H3或A/B v1.0**。
