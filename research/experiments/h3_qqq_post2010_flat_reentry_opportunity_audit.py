@@ -275,7 +275,71 @@ def main():
         "h3_frozen_stats":frozen["stats"],
         "provider":provider,
     }
+    # Period regime features and relative wealth attribution. The product of
+    # flat OPEN-to-OPEN price factors is interpretable only when ALL flat
+    # episodes lie fully inside the fixed period. Otherwise explicitly mark
+    # it as a non-reconcilable partial-period diagnostic.
+    regime=[]
+    attribution=[]
+    for row in period.itertuples(index=False):
+        start=int(str(row.first_session)[:4]);end=int(str(row.last_session)[:4])
+        subset=gaps[(gaps.start_date>=row.first_session)&(gaps.start_date<=row.last_session)]
+        signal_sub=events[(events.date>=row.first_session)&(events.date<=row.last_session)] if len(events) else events
+        feature={
+            "period":row.period,"cash_days":int(row.cash_days),
+            "cash_days_as_pct_of_all_sessions":100*float(row.cash_fraction),
+            "cash_days_above_rising_ema200":int(row.cash_when_ema200_up_and_close_above_days),
+            "share_cash_above_rising_ema200_pct":100*row.cash_when_ema200_up_and_close_above_days/row.cash_days if row.cash_days else None,
+            "cash_days_ema20_gt60":int(row.ma20_gt_ma60_while_cash_days),
+            "share_cash_ema20_gt60_pct":100*row.ma20_gt_ma60_while_cash_days/row.cash_days if row.cash_days else None,
+            "fast_gold_crosses_cash":len(signal_sub),
+            "fast_gold_blocked_cash":int((~signal_sub.effective_fast_allowed).sum()) if len(signal_sub) else 0,
+            "fast_gold_global_month_veto_cash":int((~signal_sub.global_month_gate_ok).sum()) if len(signal_sub) else 0,
+            "fast_gold_special_month_veto_cash":int((signal_sub.global_month_gate_ok & ~signal_sub.special_fast_month_ok).sum()) if len(signal_sub) else 0,
+        }
+        regime.append(feature)
+        clean=bool((not subset.end_right_censored.any()) and
+                   (subset.next_h3_buy_date.dropna().le(row.last_session).all()) and
+                   (not subset.start_left_censored.any()) and
+                   (sum(subset.days_cash)==row.cash_days))
+        product=float(np.prod(1.+subset.gap_price_return_pct/100.))
+        actual_ratio=float((1.+row.BH_account_period_return_pct/100.)/
+                           (1.+row.H3_account_period_return_pct/100.))
+        attribution.append({
+            "period":row.period,"clean_open_to_open_cash_gap_partition":clean,
+            "flat_interval_count":len(subset),"flat_open_to_open_qqq_growth_factor":product,
+            "BH_over_H3_account_growth_factor":actual_ratio,
+            "ratio_BH_over_H3_to_flat_price_product":actual_ratio/product,
+            "flat_spells_positive_price_count":int((subset.gap_price_return_pct>0).sum()),
+            "flat_spells_negative_price_count":int((subset.gap_price_return_pct<0).sum()),
+            "flat_spells_gt5pct":int((subset.gap_price_return_pct>5).sum()),
+            "interpretation":"Not a tradable return: pure missing exposure proxy" if clean else "Partition crosses reporting boundary; do NOT interpret product as complete period attribution",
+        })
+    regime=pd.DataFrame(regime)
+    attribution=pd.DataFrame(attribution)
+    signal_stats=[]
+    for kind,group in [
+        ("all_fast_gold",events),
+        ("blocked_fast_gold",events[~events.effective_fast_allowed]),
+        ("allowed_fast_gold",events[events.effective_fast_allowed]),
+        ("global_month_veto",events[~events.global_month_gate_ok]),
+        ("fast_month_veto_only",events[events.global_month_gate_ok & ~events.special_fast_month_ok]),
+    ]:
+        valid=group[group.forward_60d_complete]
+        signal_stats.append({
+            "kind":kind,"count":len(group),"complete60d_count":len(valid),
+            "future60_positive_count":int((valid.forward_60d_close_return_pct>0).sum()),
+            "future60_ge10pct_count":int((valid.forward_60d_close_return_pct>=10).sum()),
+            "future60_low_below_minus8pct_count":int((valid.forward_60d_mae_low_pct<=-8).sum()),
+            "future60_return_median_pct":float(valid.forward_60d_close_return_pct.median()) if len(valid) else None,
+            "forward_60d_mae_low_median_pct":float(valid.forward_60d_mae_low_pct.median()) if len(valid) else None,
+            "bought_on_next_h3_entry_count":int((group.sessions_until_actual_h3_entry==1).sum()),
+        })
+    signal_stats=pd.DataFrame(signal_stats)
     for file,frame in [
+        ("cash_era_regime_feature_summary.csv",regime),
+        ("flat_open_to_open_price_vs_H3_BH_gap.csv",attribution),
+        ("fast_cross_block_reason_and_forward_risk_summary.csv",signal_stats),
         ("cash_intervals_all_2010_2026.csv",gaps),
         ("cash_intervals_sorted_by_price_missed.csv",gaps.sort_values("gap_price_return_pct",ascending=False)),
         ("fast_crosses_during_cash.csv",events),
@@ -304,6 +368,9 @@ def main():
     (out/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2,default=str)+"\n")
     print("FLAT_POST2010_MAIN",json.dumps({k:v for k,v in data.items() if k not in ("h3_frozen_stats","provider")},default=str))
     print("FLAT_POST2010_PERIOD",period.to_json(orient="records"))
+    print("FLAT_POST2010_REGIME",regime.to_json(orient="records"))
+    print("FLAT_POST2010_RELATIVE_GAP_DECOMP",attribution.to_json(orient="records"))
+    print("FLAT_POST2010_SIGNAL_STATS",signal_stats.to_json(orient="records"))
     print("FLAT_POST2010_TOP_GAPS",gaps.sort_values("gap_price_return_pct",ascending=False).head(15).to_json(orient="records"))
     print("FLAT_POST2010_FAST_OUTCOMES",outcomes.groupby(["blocked_reason","outcome_60d_ex_post"]).size().to_json() if len(outcomes) else "{}")
     print("FLAT_POST2010_TOP_FAST",events.sort_values("eventual_h3_buy_open_over_candidate_open_pct",ascending=False).head(15).to_json(orient="records") if len(events) else "[]")
