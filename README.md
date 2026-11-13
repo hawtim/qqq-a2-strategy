@@ -7,6 +7,8 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+**QQQ H3 利润保护 A/B 与 Buy & Hold 完整对比（2026-11-13）**：[同一日线、四组日度权益和 MDD、CAGR、28/22 次保护、浮盈回吐保留率、2022年和各年代反证、逐笔卖飞及收益贡献分析](docs/research/H3_QQQ_AB_利润保护完整对比_2026-11-13.md) · [四线财富图](assets/h3_profit_guard_A_B_wealth_2000_2026.svg) · [复现代码](research/experiments/h3_profit_guard_ab_full_report.py) · [CSV/交易数据](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43360474392/artifacts/14007318752)。**B样本内CAGR 11.01%，A 10.69%，冻结H3 9.89%，B&H 8.31%；B未改善账户 MDD，冻结H3仍保持不变。**
+
 **H3 中周期快跌＋EMA5/20先行利润保护（2026-11-13）**：[QQQ浮盈10%/GOOGL浮盈20%、跌破EMA20再站回EMA10反复操作、EMA5/20先行死叉＋EMA10/20仍多头＋EMA60相对ATR趋势距离，24组完整账户样本内复现与反例](docs/research/H3_中周期快跌_EMA5_20先行保护_多次重入验证_2026-11-13.md) · [可复现脚本](research/experiments/h3_midcycle_fast_ema_overlay_reentry.py)。QQQ单次EMA5/20+快速下跌方案有潜在正收益；反复价格穿越EMA20/10普遍劣于原H3，**冻结H3仍未修改**。
 
 **H3 N10 利润保护 EMA5/10 vs EMA5/20 完整复利回测（2026-11-13）**：[全部实验、QQQ/GOOGL 和 Buy & Hold 账户对照、逐笔卖飞与成功保护归因](docs/research/H3_N10利润保护_EMA5_10_vs_EMA5_20_完整账户回测_2026-11-13.md) · [独立实验代码](research/experiments/h3_profit_n10_ema_guard_shadow_overlay.py) · [汇总CSV](research/results/h3_profit_ema_guard_2026_11_11/summary_compact.csv)。QQQ P10 EMA5/20提前退出＋EMA5/10回补的样本内CAGR 9.89%→10.69%，GOOGL同规则13.72%→13.28%；结果不跨标的一致，**冻结H3未修改、不可宣称已优化实盘**。
