@@ -196,7 +196,7 @@ def main():
     # Buy and hold from the exact same PRICE series and fee rules.
     b=signals[signals.Date>=pd.Timestamp(START)].copy()
     bh_shares=100000/(float(b.adj_open.iloc[0])*(1+config.fee_per_side))
-    bh_values=bh.adj_close.to_numpy()*bh_shares
+    bh_values=b.adj_close.to_numpy()*bh_shares
     bh_curve=pd.DataFrame({"Date":[str(v.date()) for v in b.Date],
                            "Equity":bh_values,
                            "Invested":True})
