@@ -1,425 +1,103 @@
-# QQQ A2-N20 · 可复现的日线趋势策略
+# H3 趋势量化策略｜QQQ
 
-> **2026-11-13｜跨标的可配置 H3 研究系统 v0.1（架构规范）**：已把原H3冻结状态机、A/B独立利润保护、B的ATR14/20/30×1.0/1.5/2.0候选、新的“EMA20/60接近失败→FAST再金叉”形态、波动率/仓位状态及跨标的验证流程分层。[统一架构、候选优先级和失败模式](docs/research/H3_CROSS_ASSET_RESEARCH_SYSTEM_FRAMEWORK_V0_1.md) · [机器可读的非执行研究配置](research/config/h3_cross_asset_research_framework_v0_1.json)。**这是先冻结边界和参数选择协议，不是已实现的多标的交易引擎；SPY/日经还没有基于此框架跑出专属系数。冻结H3与A/B v1.0完全不变。**
+**当前主研究版本：H3（冻结参考）** · **利润保护候选：A / B v1.0** · **研究/纸面回测，不接通实盘下单**
 
-> **当前分支：V3.1-A 跨标的验证（尚未提升为正式策略）。** 本分支在原 V3 上仅增加「卖出后被月线拦截的 FAST 金叉资格延续」。原 V3 默认规则仍保持冻结。  
-> [完整规则、QQQ/SPY 正反测试与复现](docs/research/V3_1_A_FAST资格延续_跨标的QQQ_SPY_2026-11-12.md) · [独立执行入口](research/experiments/a2_v3_1_cross_asset.py) · [派生对照统计](research/results/v3_1_cross_asset_2026_07_13/summary.csv) · [QQQ 新增 FAST 交易](research/results/v3_1_cross_asset_2026_07_13/qqq_candidate_only_completed_trades.csv)  
-> **QQQ 截至 2026-07-13:** V3 $924,686 / CAGR 8.747% / MDD −19.68%；A $928,191 / CAGR 8.763% / MDD −19.42%。该截止日两者有未平仓头寸；禁止与 2026-11-09 的冻结 V3 期末资产混比。当前属于历史样本内研究，不代表今天的实时仓位或自动交易许可。
+本项目研究如何通过日线趋势识别与风险保护，捕捉 QQQ 等资产的中长期上涨，同时控制账户回撤。主线是 **H3 趋势引擎**；A/B 是建立在相同 H3 持仓之上的两套可选止盈保护，并**未合并为正式 H3 默认规则**。
 
-> **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
+- [H3 完整规则与执行语义](docs/STRATEGY_H3_FROZEN.md)
+- [A/B v1.0 唯一冻结规则](docs/STRATEGY_H3_PROFIT_GUARD_AB_V1.md) · [冻结机器配置](research/config/h3_profit_guard_ab_v1.json)
+- [历史策略版本及失败实验归档索引](docs/research/INDEX.md)
+- [数据来源与回测可复现条件](docs/DATA_SOURCES.md)
 
+## 1. H3：趋势入场与风险退出
 
-**H3 B 止盈 1.5×ATR20 参数敏感性 + EMA20/60 近金叉失败、后续 FAST EMA10/20 金叉形态研究（2026-11-13）**：[ATR14/20/30 × 1.0/1.5/2.0 九组全账户敏感性、慢线失败接近后FAST金叉逐事件概率和反例](docs/research/H3_QQQ_B_ATR参数敏感性与EMA20_60近金叉失败_FAST再金叉_2026-11-13.md) · [ATR脚本](research/experiments/h3_b_atr14_20_30_x1_1p5_2_sensitivity.py) · [形态脚本](research/experiments/h3_failed_slow_near_cross_followed_fast_gold_event_study.py) · [成功Actions/全部派生CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43393803215)。**1.5ATR20并非样本内最优，ATR30×1.5历史CAGR11.66%但未采纳；完整慢线近金叉失败后FAST形态只有2笔，无法推断可靠胜率，宽泛近交叉形态不优于全部FAST金叉。冻结H3与A/B均保持不变。**
+| 状态 | 规则概要 |
+|---|---|
+| **常规入场 REGULAR** | 日 EMA20 新上穿 EMA60；月 EMA5 使用**上一已完成月**的斜率过滤。月线仍上升但减速时暂缓，允许在条件恢复且慢线仍多头时延期补买。 |
+| **快速入场 FAST** | 日 EMA10 新上穿 EMA20；在 H3 FAST 资格有效、月线总闸门放行的基础上，可延续被月线拒绝的 FAST 金叉资格。也允许**前两完整月 EMA5 斜率连续为负且下跌加速**的特殊 FAST 月度资格。 |
+| **趋势退出** | EMA20 新下穿 EMA60，下一正常交易日开盘卖出。 |
+| **N20 保护** | 买入即进入保护；发生 EMA10/20 **新死叉**且收盘价低于本次买价时退出。常规约20日保护、在明确条件下可延至30日；FAST 在慢线趋势确认前及确认后的规定窗口内持续保护。 |
+| **亏损退出** | 全持仓期 7% **净亏损收盘触发**；另有买入首日收盘亏损3%规则。二者均为**次日开盘成交**，不是保证实际损失上限的盘中止损单。 |
 
-**H3 冻结 A/B：波动率是否决定止盈效果？逐笔真实分歧交易与账户归因（2026-11-13）**：[14个真正分歧窗口、RV20高低波动与 2001/2002/2020/2014 样本反例报告](docs/research/H3_QQQ_AB_波动率状态_逐事件收益差归因_2026-11-13.md) · [可复现原冻结A/B归因脚本](research/experiments/h3_ab_qqq_volatility_regime_event_attribution.py) · [成功 CI #43391838298](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43391838298)。全历史高波动日有B对A的收益贡献，但**只三个高波动分歧窗口，两笔2001/2002主导；2020年高波动A反而胜出，不能以波动率直接在A/B间切换**。A/B v1.0、H3均保持冻结。
+所有买卖基于已经完成的日 K 和最后已完成的月 K；**当日收盘发信号、下一正常交易日开盘执行**。不预测日内最低点，不使用尚未完成的月线或未来价格。
 
-**H3 QQQ 周线已实现波动率（RV）月线豁免 × FAST/慢线入场（2026-11-13）**：[11组完整账户、2014/2024漏检与成功案例、72个原月线被拦金叉的事后风险归因](docs/research/H3_QQQ_周线波动率月线豁免_11组全账户与漏检归因_2026-11-13.md) · [独立完整状态机](research/experiments/h3_weekly_realized_vol_month_veto_engine.py) · [回测脚本](research/experiments/h3_qqq_completed_week_vol_month_veto_ablation.py) · [成功 CI + 全部CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43390101770/artifacts/14020492479)。结论：上周RV扩张＋周线收涨，在 FAST/20-60 月线特殊豁免下可缩小相对完全无过滤的风险，但**不优于冻结H3的9.89% CAGR、−24.30% MDD**；2014年5月原本错失的好机会因周RV收缩**仍不能进入**。未采纳，冻结 H3/A/B不变。
+更严格的资格、N20延长触发条件、优先级以及代码入口均以 [H3 冻结参考合同](docs/STRATEGY_H3_FROZEN.md) 为准。
 
-**H3 QQQ EMA10/20 无限循环：月线全部放开，金叉买→死叉卖→再金叉买（2026-11-13）**：[完整5方案账户对照、2014双次金叉案例、2002/2011假反弹失败与每段空仓相对财富归因](docs/research/H3_QQQ_EMA10_20无限金死叉循环填补空仓_全账户回测_2026-11-13.md) · [独立可复现代码](research/experiments/h3_qqq_ema10_20_unlimited_cycle_in_cash.py) · [成功Actions及12+个CSV/JSON](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43385161141/artifacts/14017844615)。冻结 H3 CAGR9.89%/MDD−24.30%，原H3空仓期无限EMA10/20循环 CAGR8.37%/MDD−39.60%，全周期更差；原 H3 / A/B v1.0 不变。
+## 2. A/B v1.0：H3 持仓中的额外利润保护
 
-**H3 QQQ R2：不限制月线正斜率减速的 EMA20/60 金叉 + N20 退出后的 EMA10/20 特殊买回（2026-11-13）**：[11组完整研究、两笔2006年亏损特殊买回及全部对照](docs/research/H3_QQQ_R2_不限月线减速_20_60入场_N20后FAST买回_2026-11-13.md) · [独立R2回放引擎](research/experiments/h3_r2_unrestricted_month_n20_fast_rebuy_engine.py) · [回测入口](research/experiments/h3_r2_no_month_slow_cross_n20_fast_rebuy_backtest.py) · [Actions验证与全部派生CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43383438709/artifacts/14017338387)。**慢线月线条件移除对R1-0/3/5的额外买点没有新贡献（原H3 veto本身已等价）；N20→FAST金叉仅新增2笔2006年亏损交易，各版CAGR下降约0.13百分点。未采纳；原 H3 与 A/B v1.0 继续冻结。**
+两套规则具有**完全相同的底层 H3 影子持仓（shadow）**，仅额外提前卖出逻辑不同。
 
-**H3 QQQ F1：EMA10/20 FAST 金叉特殊入场的四组完整账户研究（2026-11-13）**：[报告与反例](docs/research/H3_QQQ_F1_EMA10_20_FAST月线豁免_完整回测_2026-11-13.md) · [完整研究引擎](research/experiments/h3_f1_fast_recovery_veto_engine.py) · [回测脚本](research/experiments/h3_f1_fast_monthly_veto_recovery_backtest.py) · [Actions结果与16个分析文件](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43382197228/artifacts/14016578442)。F1-0/3/突破20日高点/EMA20>60 的CAGR **8.77%/9.45%/9.51%/9.42%**，均低于冻结 H3 **9.89%**；即使2014机会有效，跨阶段仍为负。**不采纳；H3和A/B v1.0冻结状态不变。**
+| 条件 | **A v1.0** | **B v1.0** |
+|---|---|---|
+| 最高已完成收盘毛浮盈 | ≥10% | ≥10% |
+| 当前持仓 | 仍盈利，EMA20>EMA60 | 同 A |
+| 最低持仓天数 | 无（age0） | 无（age0） |
+| 提前卖出触发 | **EMA5 新死叉 EMA20** | A 条件 **再加** EMA10>EMA20，且最近3日收盘跌幅≥**1.5×ATR20** |
+| 特别买回 | EMA5 新金叉 EMA10，EMA20>EMA60，原H3影子仍持仓 | 同 A |
+| 同一笔原H3交易额外卖出 / 买回上限 | 1 / 1 | 1 / 1 |
 
-**H3 QQQ R1-0/3/5 中周期恢复月线豁免完整回测（2026-11-13）**：[完整四组账户与交易分析](docs/research/H3_QQQ_R1_0_3_5_趋势恢复月线豁免_完整回测_2026-11-13.md) · [独立R1状态机](research/experiments/h3_r1_trend_recovery_override_engine.py) · [独立复算入口](research/experiments/h3_r1_0_3_5_trend_recovery_backtest.py) · [每日账户、全部真实新增交易、信号CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43380659195/artifacts/14016038896)。**R1-0/3/5 样本内 CAGR 分别9.53%/9.61%/9.46%，均低于原H3 9.89%；2014有改善但跨周期未成立。本研究不升级原H3、不触碰A/B v1.0。**
+**重要边界：** A/B 的提前卖出不改变 H3 本来的入场、N20、月线状态、退出日期；原 H3 强制卖出优先。B 的 `ATR20×1.5` 是**冻结研究值**，`ATR30×1.5` 虽然在 QQQ 历史敏感性实验中收益较高，**尚未通过独立验证，不取代 B v1.0**。
 
-**H3 QQQ 2010后入场月线拦截/EMA200逐层放宽（2026-11-13）**：[11组完整账户研究报告与失败案例](docs/research/H3_QQQ_月线入场放宽与EMA200分层_11组完整账户回测_2026-11-13.md) · [独立状态机副本](research/experiments/h3_month_gate_entry_relax_engine.py) · [回测入口](research/experiments/h3_entry_month_gate_ema200_ablation.py) · [完整CSV数据](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43377865867/artifacts/14015495295)。**全部月线放宽使QQQ MDD由−24.30%恶化至−38.92%；仅对新放行买点增加上升EMA200限制也无法同时改善CAGR与MDD。未修改原H3、A/B冻结规则。**
+## 3. QQQ 历史回测对比
 
-**H3 QQQ 2010–2026 长期空仓与重新入场滞后（2026-11-13）**：[完整诊断报告：39段空仓/965日、38段已回补其中31段更贵，2010–14全部13段错过上涨、47次FAST金叉中32次受月线资格拒绝、保留2022熊市反证](docs/research/H3_QQQ_2010后空仓与FAST月线拦截_机会成本与风险归因_2026-11-13.md) · [全样本独立脚本](research/experiments/h3_qqq_post2010_flat_reentry_opportunity_audit.py) · [衍生数据CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43365280317/artifacts/14010142591)。本轮**只审计，不优化入场，不修改冻结H3或A/B v1.0**。
+<sub>2000-01-03～2026-11-11；初始 $100,000；单边手续费 0.05%；无息现金；未计税及额外滑点。相同复权价格与信号/成交时序。</sub>
 
-**H3 Profit Guard A/B v1.0 — 当前已定稿的两套冻结研究候选（2026-11-13）**：[唯一行为规范](docs/STRATEGY_H3_PROFIT_GUARD_AB_V1.md) · [机器可读冻结参数](research/config/h3_profit_guard_ab_v1.json) · [版本固定的独立复算入口](research/experiments/h3_profit_guard_ab_v1_frozen.py) · [成功执行的候选冻结校验](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43363932994)。**A/B 都取消了10日最低持仓时间门槛，只保留浮盈峰值≥10%、每笔 H3 仅允许额外卖出/重入各1次。A 使用EMA5/20新死叉；B在A之上要求EMA10>EMA20与3日急跌≥1.5 ATR20；两组均通过年龄门槛0/10逐日净值完全一致校验。冻结的是研究候选，不是主H3或实盘策略。**
+| 版本 | CAGR | 最大回撤 MDD | 期末模拟资产 | 额外卖出 / 特别买回 |
+|---|---:|---:|---:|---:|
+| 买入持有 | 8.31% | −82.96% | 约 $852,247 | — |
+| **H3（基础策略）** | **9.89%** | **−24.30%** | 约 $1,257,934 | 0 / 0 |
+| **H3 + A v1.0** | 10.69% | **−23.94%** | 约 $1,528,788 | 28 / 18 |
+| **H3 + B v1.0** | **11.01%** | −24.30% | 约 $1,652,616 | 22 / 12 |
 
-**H3 QQQ A/B：去掉10天持仓限制、允许重复防御的18组消融（2026-11-13）**：[完整报告：10/3/0日门槛全部等价；A/B不限次数显著增加交易、降低CAGR；解释为何改善笔数增加但资金复利恶化](docs/research/H3_QQQ_AB_取消N10与重复止盈敏感性_2026-11-13.md) · [复现代码](research/experiments/h3_qqq_profit_guard_age_cycle_ablation.py) · [CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43362400585/artifacts/14008925920)。SPY/日经待后续跨市场验证；冻结H3未改。
+- **冻结 H3**：60 笔已完成交易，26 盈 / 34 亏；历史资金在场约 67.47%，平均盈亏比约 5.42。
+- **A/B 的相对价值尚未通过样本外验证**：B 历史 CAGR 略高，但**未比原 H3 降低最大回撤**；A 历史回撤略低。
+- 该期间已被多轮研究反复使用，不能把回测收益解释为未来保证收益或实盘账户结果。
 
-**QQQ H3 利润保护 A/B 与 Buy & Hold 完整对比（2026-11-13）**：[同一日线、四组日度权益和 MDD、CAGR、28/22 次保护、浮盈回吐保留率、2022年和各年代反证、逐笔卖飞及收益贡献分析](docs/research/H3_QQQ_AB_利润保护完整对比_2026-11-13.md) · [四线财富图](assets/h3_profit_guard_A_B_wealth_2000_2026.svg) · [复现代码](research/experiments/h3_profit_guard_ab_full_report.py) · [CSV/交易数据](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43360474392/artifacts/14007318752)。**B样本内CAGR 11.01%，A 10.69%，冻结H3 9.89%，B&H 8.31%；B未改善账户 MDD，冻结H3仍保持不变。**
+[查看 H3 截止 2026-11-11 的逐笔成交与信号审计](docs/research/V3_1_H3_2026年7至11月补样与进出场审计_2026-11-12.md) · [查看 A/B 全账户归因及负面案例](docs/research/H3_QQQ_AB_利润保护完整对比_2026-11-13.md)
 
-**H3 中周期快跌＋EMA5/20先行利润保护（2026-11-13）**：[QQQ浮盈10%/GOOGL浮盈20%、跌破EMA20再站回EMA10反复操作、EMA5/20先行死叉＋EMA10/20仍多头＋EMA60相对ATR趋势距离，24组完整账户样本内复现与反例](docs/research/H3_中周期快跌_EMA5_20先行保护_多次重入验证_2026-11-13.md) · [可复现脚本](research/experiments/h3_midcycle_fast_ema_overlay_reentry.py)。QQQ单次EMA5/20+快速下跌方案有潜在正收益；反复价格穿越EMA20/10普遍劣于原H3，**冻结H3仍未修改**。
+### H3 完整交易地图
 
-**H3 N10 利润保护 EMA5/10 vs EMA5/20 完整复利回测（2026-11-13）**：[全部实验、QQQ/GOOGL 和 Buy & Hold 账户对照、逐笔卖飞与成功保护归因](docs/research/H3_N10利润保护_EMA5_10_vs_EMA5_20_完整账户回测_2026-11-13.md) · [独立实验代码](research/experiments/h3_profit_n10_ema_guard_shadow_overlay.py) · [汇总CSV](research/results/h3_profit_ema_guard_2026_11_11/summary_compact.csv)。QQQ P10 EMA5/20提前退出＋EMA5/10回补的样本内CAGR 9.89%→10.69%，GOOGL同规则13.72%→13.28%；结果不跨标的一致，**冻结H3未修改、不可宣称已优化实盘**。
+[![H3：2000–2026/11 完整历史信号、60 笔交易及最近一段日线放大](assets/a2_ema_v3_1_h3_trade_map_2000_2026_11.svg)](assets/a2_ema_v3_1_h3_trade_map_2000_2026_11.svg)
 
-**H3 QQQ+GOOGL 中途回吐 50% 全交易量化（2026-11-13）**：[118 笔交易、38 次利润回吐事件、先前20%预警处多指标对照、恢复与未恢复案例](docs/research/H3_QQQ_GOOGL_持仓中途利润回吐50_全交易特征分析_2026-11-13.md) · [衍生汇总 CSV](research/results/h3_giveback_feature_audit_2026_11_11/summary.csv) · [复现脚本](research/experiments/h3_intrade_giveback_feature_audit.py)。两个资产均未找到足以直接上线的统一高置信度单指标，冻结 H3 不变。
+[单独查看 H3 SVG](assets/a2_ema_v3_1_h3_trade_map_2000_2026_11.svg) · [派生交易账本](research/results/v3_1_h3_2026_11_11/h3_trades.csv) · [历史回测快照](research/results/v3_1_h3_2026_11_11/summary.json)
 
-**H3 下一阶段 Peak Giveback 研究计划（2026-11-13）**：[以最高浮盈被吐回 ≥50% 为主要事后事件标签（允许超过 100%），逐项验证量价背离、RSI/MACD、EMA/趋势破坏、ATR/波动率和市场广度；再做严谨重入与完整账户回测](docs/research/H3_Peak_Profit_Giveback比例标签与多指标顶部验证_研究计划_2026-11-13.md)。这是未跑的新研究定义，旧固定 15pp 的量能实验统计保留、不改写；冻结 H3 不变。
+## 4. 本地复现
 
-**H3 量能衰竭与高浮盈回吐（2026-11-13）**：[QQQ + GOOGL 五组价量止盈信号、峰值特征及卖飞失败案例](docs/research/H3_量能衰竭与高浮盈回撤_2026-11-13.md) · [研究脚本](research/experiments/h3_volume_peak_exhaustion.py)。仅单腿提前卖出价格对照，不是完整账户 CAGR/MDD，**冻结 H3 保持不变**。
-
-**GOOGL H3 月线过滤完整消融（2026-11-13）**：[2×2 三组取消过滤与冻结 H3 的账户对照](docs/research/H3_GOOGL_月线过滤消融实验_2026-11-13.md) · [完整派生统计 CSV](research/results/h3_googl_2026_11_11/monthly_ablation_summary.csv) · [可复算脚本](research/experiments/h3_googl_monthly_ablation.py)。全部取消后 CAGR **13.72% → 12.57%**，MDD **−35.49% → −42.03%**，交易 58 → 78；2022 年取消 FAST 月线斜率过滤的全年账户收益 **−23.38% → −38.61%**。负面研究，不采纳，冻结 H3 不变。
-
-**GOOGL 七段空仓 FAST 归因（2026-11-13）**：[逐日检查 FAST 金叉、月 EMA5 拒绝原因及 58/58 开仓对账](docs/research/H3_GOOGL_FAST月线过滤归因_2026-11-13.md)。指定的七段空仓上涨共 12 次新 FAST 金叉：首次开仓前 3 次无 FAST 资格，后续 9 次全部被月线条件拦截（3 次上升减速 veto、6 次月斜率不符合 H3 FAST 例外）；**并不证明解除过滤会改善收益或 MDD**。策略不改。
-
-### 2026-11-13：H3 回调重入负面研究归档；GOOGL 全历史跨标的验证
-
-- **回调重入方向暂时搁置**：[趋势扩张、动能衰减提前退出与 13 种重入方案的完整负面实验记录](docs/research/H3_趋势扩张动能衰减_提前退出重入_负面实验归档_2026-11-13.md)；不会改变冻结 H3。
-- **GOOGL 全历史原生 H3 回测已执行**：[2004–2026 的 5,594 根日 K、58 笔交易、风险归因与对照](docs/research/H3_GOOGL_全历史跨标的回测_2026-11-13.md) · [结果摘要](research/results/h3_googl_2026_11_11/summary.csv) · [完整交易和权益 CSV（GitHub Actions artifact）](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43262766598/artifacts/13963834223) · [复算入口](research/experiments/h3_googl_cross_asset.py)。GOOGL H3 CAGR **13.72%** / MDD **−35.49%** / Payoff **6.02**，明显降低长期持有的回撤，却落后其 CAGR **23.95%**。本实验保持 H3 参数完全不变；历史样本内，研究用途。
-
-### H3 新研究：盈利快线死叉卖出，等待慢线收敛＋快线再金叉（2026-11-12）
-
-- [完整事件分布、15 组账户对照与案例归因](docs/research/V3_1_H3_盈利快死叉退出_慢线收敛后快金叉重入_2026-11-12.md) · [所有方案收益/回撤 CSV](research/results/v3_1_h3_ma_spread_2026_11_11/summary.csv) · [60 笔峰值均线间距](research/results/v3_1_h3_ma_spread_2026_11_11/peak_geometry.csv) · [31 笔首次盈利快死叉事件](research/results/v3_1_h3_ma_spread_2026_11_11/first_profitable_fast_death_geometry.csv) · [Python 研究复算入口](research/experiments/a2_v3_1_h3_fast_death_slow_reconvergence.py)。
-- **实测距离：** 28 笔曾有≥10%最高收盘浮盈的 H3 交易，最高收盘日 EMA10/20 正向间距中位 **+1.22%**，EMA20/60 正向间距中位 **+3.21%**。31 笔首次出现盈利快线死叉时，EMA20/60 仍相差中位 **+2.21%**（25～75%分位 +1.83～+2.99%）。高利润日的短均线**相对靠近**不等于已经接近金叉/死叉。
-- **结论：暂不升级。** 利润仍为正时快死叉退出、慢线缩到≤1%才再快金叉买回：QQQ 全周期 CAGR **9.89%→7.59%**，MDD **−24.30%→−23.94%**；若曾有≥10%浮盈才启动、慢线放宽至≤2%，CAGR 也仅 **9.12%**。历史专属重入普遍比退出价更贵（慢线≤2%方案 **17/17** 次买回更贵）。V3、H3 默认信号与正式主分支均不改变；原始行情不重分发。
-
-### H3 新研究：部分减仓与快速补回，不再强制全仓离场（2026-11-12）
-
-- [详细规则、20 组 QQQ/SPY 对照、订单及历史分段归因](docs/research/V3_1_H3_慢线距离_部分减仓_快速补回_2026-11-12.md) · [完整汇总 CSV](research/results/v3_1_h3_partial_hedge_2026_07_13/qqq_spy_partial_reduction_summary.csv) · [50% 减仓/补回实际订单](research/results/v3_1_h3_partial_hedge_2026_07_13/trim_restore_events_50pct.csv) · [原生本地回测入口](research/experiments/a2_v3_1_h3_partial_position.py)。
-- **结果：** 最近 40 日 EMA20/60 距离峰值≥2.5 ATR + 历史收盘浮盈≥10% + EMA10/20 死叉时**减半仓**、EMA5/10 金叉恢复：QQQ CAGR **10.23%→10.42%**，MDD **−24.30%→−23.94%**；SPY CAGR **8.22%→7.33%**，MDD 不变。QQQ 订单数 **117→172**；仅样本内微幅改善，不足以正式采用。
-- **关键机制：** 同一 QQQ 方案的 **20 次补回全部比减仓价格更贵**，但 15 次减仓一直保持到原始 H3 退出，其中 14 次原最终退出价格更低。这个实验可能只在特定末段回撤中更早减风险，而不是普遍能够卖高买低。主策略不变。
-
-### H3 独立研究：慢线 EMA20/60 距离拉开后提前止盈、快速重新入场（2026-11-12）
-
-- [完整规则、13 组方案、QQQ/SPY 账户回测与失败案例](docs/research/V3_1_H3_慢线距离扩张_快速止盈重入_2026-11-12.md) · [26 行全方案对照结果 CSV](research/results/v3_1_h3_trend_spread_2026_07_13/qqq_spy_all_arms.csv) · [本地复算入口](research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py)。
-- **结论：暂不采用。** 当 EMA20/60 距离达到或曾在最近 40 日达到 ATR 归一化阈值后，使用 EMA10/20 死叉或更早动能收窄止盈，再用 EMA5/10 或 EMA10/20 金叉重入，**没有一组同时跑赢冻结 H3 的 QQQ 与 SPY**；通常损失强趋势持仓时间、增加交易频率，MDD 改善有限。这是样本内研究，不是未来预测；`main` 与原 H3 默认规则不变。
-
-### QQQ V3.1-H3 交易地图：已更新至 2026-11-11（仍为研究候选）
-
-[![QQQ V3.1-H3：2000～2026-11-11 七段周 K、60 笔交易明细，以及 2026-07～11 日 K 的买卖信号、过滤拒绝与重新入场](assets/a2_ema_v3_1_h3_trade_map_2000_2026_11.svg)](assets/a2_ema_v3_1_h3_trade_map_2000_2026_11.svg)
-
-- **最新 H3 独立研究快照：** QQQ 2000-01-03～**2026-11-11**，初始 $100,000，单边佣金 0.05%。截至最新**已完成**美股交易日：权益 **$1,257,934**，CAGR **9.89%**，日末 MDD **−24.30%**，**60 笔已完成交易（26 胜 / 34 负）**，**空仓、无待执行单**。22 笔 H3 加速 FAST 已平仓。不是当前选定的 V3，更不是券商账户。
-- **你最关心的 7 月下跌后重新进场：** 7/31 EMA20/60 死叉，**8/03 开盘卖出**此前 4/10 的 FAST 持仓；**8/03 慢线金叉与 8/06 快线金叉均被月线 EMA5 上升减速 veto**，未买入；8 月完成月斜率恢复后，**9/01 收盘**满足延期 REGULAR 买入资格，**9/02 开盘买入**（原始开盘 **$707.10**，复权开盘 **$706.37**）；10/30 死叉后 **11/02 开盘卖出**（**$695.315**）。截至 11/11 最新收盘 **$690.38**，仍空仓。
-- **两笔新完成交易：** #59 **4/10～8/03 +12.51%**（原 7 月快照仍未平仓；其全持仓 Peak DD **−11.22%**），#60 **9/02～11/02 −1.66%**（Peak DD **−9.11%**）。收益含模拟买卖佣金，不包含税与额外滑点。
-- **图表结构：** 七段完整复权周 K 背景＋专门的 **2026/07～11 真实日 K 放大图（EMA10/20/60）**，灰色斜方块表示**拒绝的金叉**，绿色买点为次常规交易日开盘实际模拟执行；下方 60 行记录同时列出 `MFE high`、`MAE low` 和 `Peak DD`。
-- **全部核对与归因：** [7～11 月信号、成交时差与数据调整审计](docs/research/V3_1_H3_2026年7至11月补样与进出场审计_2026-11-12.md) · [60 笔交易账本](research/results/v3_1_h3_2026_11_11/h3_trades.csv) · [60 笔风险指标](research/results/v3_1_h3_2026_11_11/h3_trade_risk.csv) · [8/03 与 8/06 veto、9/01 准入的逐事件表](research/results/v3_1_h3_2026_11_11/post_july_signal_audit.csv) · [研究快照 JSON](research/results/v3_1_h3_2026_11_11/summary.json)。
-- **冻结边界：** 原 [2026-07-13 SVG 保留档案](assets/a2_ema_v3_1_h3_trade_map_2000_2026_07_frozen.svg)，[58 笔交易账本与当时未平仓状态](research/results/v3_1_h3_2026_07_13/summary.csv) 均**未改动**。原先用户收藏的 [`...2026_07.svg` URL](assets/a2_ema_v3_1_h3_trade_map_2000_2026_07.svg) **也已更新为和最新 11 月图相同的内容**，仅文件名为向后兼容而保留。数据源版权不允许公开分发原始每日 OHLCV，仅提交派生交易/图形。
-
-**规则边界：** H3 上两个完整月负斜率下跌加速时允许 FAST，与 V3.1-A 的延期资格共同使用；**7 月后的 9/02 买入是 REGULAR 延迟入场，不是 H3 新 FAST**。入场和退出信号始终只看已完成日 K，模拟下一常规开盘成交。原选定 `main` V3 SVG 和策略未改变。
-
-> A frozen baseline + reproducible backtest + complete good/bad case ledger + experimental branches.  
-> **研究与模拟跟踪用途。没有券商交易接口，不会自动下单。**
-
-冻结版 **SMA A2-N20 V1.0** 的核心不是猜顶抄底，而是：**SMA20 新上穿 SMA60 入场；入场前20个交易日用带浮亏条件的 MA10/20 新死叉控制失败；其余时间等 MA20/60 新死叉退出；出场后只等下一次新的 MA20/60 金叉。**
-
-这套冻结策略按 QQQ 日线收盘确认、**下一交易日开盘**成交。它在最新完整样本中只有约 **41.67%** 的历史胜率；历史优势来自较高的平均盈亏比，**不等于高胜率、保本或可直接加杠杆**。
-
-## 当前选定研究基准 V3：动态延长 N20 ＋ 首日亏损 3% 退出（2026-11-11）
-
-**V3 是当前优先研究与模拟跟踪的基准；并非实盘自动交易策略。** 它完整继承 V2 的月 EMA5 上升减速过滤、延迟补买、FAST 回补与买入首日 N20；保留原 **7% 净亏损收盘止损**，新增两条：
-
-1. **常规入场动态延期 N20**：第 20 个完整持仓日收盘时，若最近 5 日有至少 2 日收盘低于本笔买入开盘价，且 EMA10/EMA20 相对距离较 5 日前收窄，则将原 N20 保护期有条件延长至第 30 日。仍须新 EMA10/20 死叉且收盘低于入场价才会退出。
-2. **买入当天快速失败保护**：若成交日收盘价相对买入开盘价跌幅达到 **3%**，则下一交易日正常开盘卖出。**不假设当日收盘价成交，也不假设盘中能精确成交在 −3%。**
-
-| 同一 QQQ 全周期（2000-01-03～2026-11-09） | 期末权益 | CAGR | 日末 MDD | 完成交易 | 最差单笔 |
-|---|---:|---:|---:|---:|---:|
-| V2（冻结历史对照） | $835,957 | 8.229% | −19.68% | 52 | −8.32% |
-| **V3（当前选定）** | **$878,933** | **8.432%** | **−19.68%** | **52** | **−6.35%** |
-| 4% 收盘止损（**样本内过拟合风险示例，不选**） | $899,532 | 8.525% | −19.58% | 52 | −6.08% |
-| QQQ Buy & Hold（机会成本基准） | $838,631 | 8.24% | −82.96% | — | — |
-
-V3 比 V2 仅改变 **2000-06-22**（−5.73% → −3.77%）和 **2011-10-14**（−8.32% → −5.58%）两笔退出；样本中无新增错杀赢家，**但这并不构成未来错杀概率为零的证据**。4% 止损虽然历史得分更高，却是根据同一份样本比较参数而得到的结果；它和动态 N20 在 2011 年同一天触发，既不能保证精确在 −4% 成交，也不能证明未来不会提前退出赢家。**保留作为参数选择偏差的示例，不加入 V3。** 两条 V3 新规则同样有历史特例依赖，尚待独立验证，最大回撤并没有随之下降。
-
-- [V3 完整选定规则、风险与决策记录](docs/STRATEGY_SELECTED_V3.md) · [单一可复现回测入口](research/experiments/a2_v3_selected.py)
-- [V3 汇总数据](research/results/a2_v3_selected_2026_11_09/summary.csv) · [52 笔交易账本](research/results/a2_v3_selected_2026_11_09/selected_v3_trades.csv) · [V2→V3 完整变化](research/results/a2_v3_selected_2026_11_09/changed_trades_vs_v2.csv)
-- [动态 N20、首日 3% 与 4% 对照的全部敏感性反例](docs/research/A2_V2动态延长N20与买入首日3pct退出_2026-11-11.md) · [独立测试数据](research/results/a2_dynamic_n20_day0_2026_11_09/summary.csv)
-
-### V3 全周期 SVG：七段 K 线、所有买卖点与完整交易表
-
-[![V3 七段周 K 线、52 笔日线开盘成交标记与完整成交表](assets/a2_ema_v3_trade_map_2000_2026.svg)](assets/a2_ema_v3_trade_map_2000_2026.svg)
-
-蓝色上三角是实际买入开盘，紫色下三角是 EMA20/60 死叉卖出，橙色是 N20，深橙色是**延期至第 30 日**的 N20 卖出（2011-11-21），红色是**首日收盘跌 3%、次日开盘**卖出（2000-06-23）。底图是按周聚合的 K 线，仅用于显示；所有信号与成交仍严格按**日线**计算。完整 SVG 下半部列出全部 52 笔，表内价格和收益四舍五入；原始精度以 CSV 为准。
-
-[![V3 独立账户权益与最大回撤日线 SVG](assets/a2_ema_v3_equity_drawdown_2000_2026.svg)](assets/a2_ema_v3_equity_drawdown_2000_2026.svg)
-
-两张图都是**V3 专属**，不覆盖旧第四方案、V2 和 SMA 冻结图。图中采用仓库已提交的 V3 交易/权益账本；七段周 K 图的矢量底图复用旧图中已发布的同截止日蜡烛图几何形状，**不**在仓库新增有授权限制的原始行情。复现静态图（无需私有 OHLCV 文件）：
+本仓库**不分发没有授权的第三方原始行情**。自行准备1999年起、足够EMA预热的完整拆分/分红一致复权日线 OHLCV。使用统一调整基准，核验交易日与缺失值。
 
 ```bash
-python scripts/render_v3_audit_charts.py
-```
+python -m pip install -e '.[dev]'
 
-图表固定截至 2026-11-09，并非今天的实时交易状态；若更新行情或 V3 版本，必须先重新执行 V3 状态机、更新 CSV 和匹配的行情底图，不能只把图标题的日期改掉。
+# H3：自备、经过复权/预热校验的完整日线
+python research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py \
+  --symbol QQQ \
+  --csv sources/qqq_adjusted_with_warmup.csv \
+  --end 2026-11-11 \
+  --outdir research/results/h3_local
 
-复现：准备合法取得的三段 QQQ 复权日 K，执行 `python research/experiments/a2_v3_selected.py --old /local/old/QQQ.csv --new /local/new/QQQ.csv --update /local/update.csv --end 2026-11-09`。默认保存到 `research/results/a2_v3_selected_2026_11_09/`。**下文的 V2、四方案、三方案全部为历史研究档案，不代表当前选定基准。**
+# A/B v1.0：验证冻结参数、交易、四路账户对照
+# 数据需符合研究脚本引用的历史来源和数据覆盖要求
+python research/experiments/h3_profit_guard_ab_v1_frozen.py \
+  --outdir research/results/h3_ab_local
 
-## 历史研究候选 V2：月 EMA5 上升减速过滤＋延迟补买＋首日 N20（2026-11-11）
-
-**V2 现为历史对照，不再是当前选定版本。** 保留全部 SMA A2 V1.0、EMA 第四方案和它们的历史账本不变。V2 在第四方案上增加月 EMA5 上升减速时暂缓新入场、条件恢复时在有效 EMA20/60 多头趋势内补买，并让**所有买入当天**的亏损 EMA10/20 新死叉触发动态 N20；仍在信号完成后的**下一交易日开盘**成交。
-
-| 同一 QQQ 全周期对照（2000-01-03～2026-11-09） | 期末权益 | CAGR | 日末最大回撤 | 完成交易 | 在场时间 |
-|---|---:|---:|---:|---:|---:|
-| 原第四方案 | $742,709 | 7.75% | −26.00% | 59 | 68.46% |
-| **V2：月线减速＋延迟补买＋所有入场首日 N20** | **$835,957** | **8.23%** | **−19.68%** | **52** | **64.27%** |
-| QQQ Buy & Hold | **$838,631** | **8.24%** | −82.96% | — | 100% |
-
-**V2 期末资产达到 Buy & Hold 的 99.68%，仅相差约 $2,674。** 这是税前、零现金利息、无额外滑点的样本内历史对比；Buy & Hold 末日尚未卖出、没有计入终止卖出费。**不能据此认定未来能够持续贴近 Buy & Hold 或稳定维持较低回撤。**
-
-最重要的反证：V2 相对先前月线减速＋延迟补买版本，**26 年仅 2015-08-18 一笔 FAST 入场的退出日期发生改变**，单笔历史亏损由 −15.41% 变为 −0.78%。当天 EMA10 与 EMA20 仅相差 −$0.0009012，轻微的单日收盘价扰动就可能将死叉移至下一天，结果极其依赖精确数据与保护起算日。历史 52 次入场中只有这一次触发新的首日 N20，不能据此估计未来错杀率。分钟级成交质量及滑点尚未实测。
-
-- [V2 完整可执行定义（研究/模拟，不含实盘订单授权）](docs/STRATEGY_CANDIDATE_V2.md)
-- [月线 EMA5 上升减速、延迟补买的全部正反例](docs/research/A2_月EMA5斜率减速_牛熊切换信号独立回测_2026-11-11.md)
-- [首日 N20 的全周期消融、2015 逐笔审计及微小价格扰动](docs/research/A2_N20买入当日保护_FAST与全部入场审计_2026-11-11.md)
-- [V2 与基线的 8 组指标 CSV](research/results/a2_n20_day0_2026_11_09/summary.csv) · [V2 52 笔完整交易](research/results/a2_n20_day0_2026_11_09/month_slowdown_defer_all_trades.csv) · [全部开仓日交叉审计](research/results/a2_n20_day0_2026_11_09/entry_day_opportunities.csv)
-- [独立回测入口](research/experiments/a2_n20_entry_day_study.py) · [研究版状态机](research/experiments/a2_month_ema5_slope_regime.py) · [回归测试](tests/test_month_ema5_slope_regime.py)
-
-复现：合法本地取得旧版、新版及增量 QQQ 复权行情后，执行 `python research/experiments/a2_n20_entry_day_study.py --old /local/old/QQQ.csv --new /local/new/QQQ.csv --update /local/update.csv --end 2026-11-09 --outdir research/results/a2_n20_day0_2026_11_09`，查看 `summary.csv` 中的 `month_slowdown_defer/all` 行。下列第四方案和三方案是**保留的历史对照**，不应被 V2 覆盖。
-
-## 最新四方案：月 EMA5 提前回补 + 动态 N20（2026-11-10）
-
-同一 QQQ 复权日线（2000-01-03—2026-11-09）、$100,000 初始资金、买卖各 0.05% 费用、收盘信号与次日开盘成交、空仓现金利息 0、税前且不含滑点。**第四方案是可复现的研究候选，不是生产交易或自动下单授权。**
-
-| 对照 | 期末权益 | CAGR | 日末 MDD | 完整交易 | 在场时间 |
-|---|---:|---:|---:|---:|---:|
-| SMA A2-N20（冻结） | $436,163 | 5.64% | **−20.29%** | 60 | 51.42% |
-| EMA A2-N20 + 7% 收盘止损 | $658,227 | 7.27% | −26.00% | 54 | 65.56% |
-| **EMA 月 EMA5 + 提前回补 + 动态 N20 + 7%** | **$742,703** | **7.75%** | −26.00% | 59 | 68.46% |
-| QQQ Buy & Hold | **$838,629** | **8.24%** | −82.96% | — | 100% |
-
-[![QQQ 四方案账户资产与回撤同口径比较](assets/a2_fourway_sma_ema7_dynamic_buyhold_2000_2026.svg)](assets/a2_fourway_sma_ema7_dynamic_buyhold_2000_2026.svg)
-
-第四方案在**任何退出后**允许**日 EMA10/20 新金叉 + 上一个已完成月线 EMA5 斜率上行**提前回补；普通 EMA20/60 新金叉不受月线过滤。提前入场时，EMA10/20 新死叉且持仓亏损的 N20 保护一直有效，直至 EMA20/60 金叉确认，**再延续 20 个交易日**。随后进入成熟趋势持仓。全程 EMA20/60 死叉与净亏损 7% 收盘阈值仍有效；所有卖出均在次日开盘，跳空可造成超过 7% 的实际亏损。**月线用的是 EMA5，不是 SMA5。**
-
-**反证与限制：**相比“提前回补但从买入日起固定计数 N20”，动态方案 **26 年仅一笔交易改变卖出日期**（2011-07-01 买，原 08-09 卖 −10.13%，新 08-04 卖 −1.99%），但更高复利本金使期末从 $681,032 增至 $742,703。全周期 MDD 仍 −26%，2016—2021 的局部回撤还比 EMA+7% 更深。并无样本外证明。
-
-- [第四方案完整规则、收益、反例、分段与复现](docs/research/A2_四方案_月EMA5提前回补_动态N20_2026-11-10.md)
-- [七段 K 线、所有买卖点与完整 59 笔交易表](assets/a2_ema_dynamic_n20_trade_map_2000_2026.svg) · [2011 每日 K 线对照](assets/a2_ema_dynamic_n20_2011_daily_candles.svg)
-- [四方案指标 CSV](research/results/fourway_current_2026_11_09/summary.csv) · [第四方案全部交易 CSV](research/results/fourway_current_2026_11_09/EMA_A2_DynamicN20_monthEMA5_close7_trades.csv) · [2011 唯一不同卖出事件](research/results/fourway_current_2026_11_09/dynamic_n20_changed_trades.csv)
-
-复现：`python research/experiments/a2_fourway_current.py --csv sources/qqq_merged_updated_local.csv --end 2026-11-09`（行情需自行合法取得，仓库不分发原始日 K）。下方原三方案视为**历史冻结对照**，保留原文和结果。
-
-## 历史三方案定调策略（2026-11-10）
-
-**研究决策：EMA20/60 金叉入场 + EMA N20 + 全程净亏损 7%「收盘确认、次日开盘退出」**设为当前优先研究与模拟跟踪方案。原始 **SMA A2-N20 V1.0 完全冻结**，长期 **QQQ Buy & Hold** 始终保留为机会成本基准。以下数据均为历史样本内研究，不是生产交易信号。
-
-统一口径：QQQ 复权日线 **2000-01-03—2026-11-09**；初始 **$100,000**，空仓开始（Buy & Hold 首日买入）；每次买卖各收 **0.05%** 费用；收盘确认信号，**下一交易日开盘**执行；现金利息 0，税前、无滑点。
-
-| 指标 | SMA A2-N20（冻结） | **EMA A2-N20 + 7%（当前选定）** | QQQ Buy & Hold |
-|---|---:|---:|---:|
-| 期末权益 | $436,163 | **$658,227** | **$838,629** |
-| 累计收益 | +336.16% | **+558.23%** | **+738.63%** |
-| CAGR | 5.64% | **7.27%** | **8.24%** |
-| 日末最大回撤 MDD | **−20.29%** | −26.00% | −82.96% |
-| 完成交易笔数 | 60 | 54 | 不适用 |
-| 胜率 | 41.67% | 44.44% | 不适用 |
-| 平均盈亏比 Payoff | **4.04** | 3.84 | 不适用 |
-| 持仓日占比 | 51.42% | 65.56% | 100% |
-| 最差已完成单笔净回报 | −7.63% | −8.32% | 不适用 |
-
-**怎么理解三个方案：**
-
-- **SMA：风控优先。** 历史 MDD 最小、接近一半时间空仓，但牛市较容易错过一段趋势。
-- **EMA + N20 + 7%：收益/回撤折中。** 比 SMA 多捕捉趋势、期末高约 **$222k**；代价是 MDD 深约 **5.71 个百分点**，且 7% 的历史改善高度依赖 2000 年首笔交易，不是已证实的最优阈值。
-- **Buy & Hold：长期收益最大、执行简单。** 历史终值最高，但曾需承担约 **−83%** 账户回撤；不适合将其风险视为可忽略。
-
-> **7% 不是保证最大亏损 7%。** 是持仓后持续检查的单笔*税前、含往返费用*日收盘亏损阈值；卖单仍在次交易日开盘成交，可能因隔夜跳空亏得更多，历史最差已完成单笔约 **−8.32%**。EMA N20 和 EMA20/60 死叉照常生效；止损后**只等下一次新 EMA20/60 金叉**。
-
-[![SMA、EMA+7% 与长期持有：账户复利及回撤对比](assets/a2_threeway_sma_ema7_buyhold_2000_2026.svg)](assets/a2_threeway_sma_ema7_buyhold_2000_2026.svg)
-
-**完整研究档案：**[三方案方法、利弊与阶段复核](docs/research/A2_SMA_EMA7_BuyHold_三方案定版_2026-11-10.md) · [统一回测代码](research/experiments/a2_threeway_current.py) · [三方案汇总 CSV](research/results/threeway_current_2026_11_09/summary.csv) · [分阶段敏感性](research/results/threeway_current_2026_11_09/period_metrics.csv) · [EMA+7% 完整交易](research/results/threeway_current_2026_11_09/EMA_A2_N20_close7_trades.csv) · [SMA 完整交易](research/results/threeway_current_2026_11_09/SMA_A2_N20_trades.csv) · [数据审计假设](research/results/threeway_current_2026_11_09/audit_metadata.json)。
-
-复现：`python research/experiments/a2_threeway_current.py --csv sources/qqq_merged_updated_local.csv --end 2026-11-09`（本地使用有授权的复权日线；不公开原始行情）。此表为**独立研究版本**，不会修改下文冻结 SMA 的旧报告或历史结果。
-
-## 最新状态｜已补齐至美东 2026-11-09 收盘
-
-**从 2026-07-13 冻结快照向后增加 84 个真实完整交易日，策略规则一字未改。** 2026-11-10（北京时间）观察时，美股最近完整日 K 为 **11月9日**；此项目不是连续联网行情源，往后仍须刷新本地数据并重算。
-
-| 指标 | 7月13日原冻结快照 | 11月9日完整样本 |
-|---|---:|---:|
-| 已完成交易 | 58 | **60** |
-| 赢家 / 输家 | 24 / 34 | **25 / 35** |
-| 胜率 | 41.38% | **41.67%** |
-| Payoff（平均盈利/平均亏损绝对值） | 4.02 | **4.04** |
-| Profit Factor | 2.84 | **2.89** |
-| 账户历史最大回撤 MDD | −20.29% | **−20.29%** |
-| 年化复合收益率 CAGR | 5.84% | **5.64%** |
-| 初始 $100,000 对应期末权益（现金0利息） | $450,595.85 | **$436,162.72** |
-| 期末状态 | 持仓（4月23日买入） | **空仓，无待执行委托** |
-
-**这84个交易日的账户收益为 −3.20%（−$14,433.13）**，并非策略自 2000 年累计收益。同区间参考：QQQ **复权买入持有 −4.45%**（不计新交易费）；A2 空仓现金按 **DGS3MO−15bp** 计息的账户阶段收益约 **−2.15%**。阶段窗口有选择偏差，不代表未来可复制。原因：7月13日账面已有一笔浮盈，7月27日离场时回吐了一部分；之后8月短暂重入又小亏。虽然新增已完成交易一赢一亏，账户这段时间依然是负收益。
-
-| 交易 | 已知收盘信号 → 次交易日开盘成交 | 本笔已完成回报（含两次0.05%费） | 说明 |
-|---|---|---:|---|
-| #59 | 4/22 金叉 → 4/23 买；**7/24 MA20/60 死叉 → 7/27 卖** | **+5.84%** | 7月13日仍持有，不能把整笔收益当成7月之后赚的 |
-| #60 | **8/26 金叉 → 8/27 买**；8/28 亏损状态下 MA10/20 新死叉 → **8/31 N20 卖** | **−0.35%** | 两个持仓交易日，N20 保护触发 |
-
-11月9日 QQQ 未复权收盘价 **$679.35**；按本次复权序列计算的 MA10/20/60/200 分别约 **689.35 / 704.30 / 719.12 / 680.09**。**11月3日虽然出现 MA20/60 死叉，但模型早已空仓，这一天不是一笔额外卖单。** [补样审计报告](docs/research/A2_2026_07_14到11_09_样本扩展复核.md) · [全部60笔交易](research/results/A2_current_trades_to_2026_11_09.csv) · [新增两笔](research/results/A2_newly_completed_trades_2026_07_14_to_11_09.csv) · [新时期每日权益](research/results/A2_forward_daily_equity_2026_07_14_to_11_09.csv) · [信号事件](research/results/A2_forward_signal_events_2026_07_14_to_11_09.csv) · [审计元数据](research/results/A2_forward_update_to_2026_11_09.json)。
-
-## 同一起点的买入并持有基准｜收益高，不代表回撤可承受
-
-**将“尽可能大的长期回报”和“人能够坚持执行的最大回撤”一起作为研究目标。** 严格核对 2000-01-03 同日首开、$100,000、复权日线及首次 0.05% 交易费后，QQQ 买入持有的数据如下。A2 冻结版仍单独保留，不因新数据更新改写历史。
-
-| 策略和指标 | 2000-01-03 — **2026-07-13** 冻结样本 | 2000-01-03 — **2026-11-09** 更新样本 |
-|---|---:|---:|
-| **A2-N20** $100k 终值 | $450,596 | $436,163 |
-| **QQQ 买入并持有** $100k 终值 | **$877,700** | **$838,629** |
-| A2 累计收益 / CAGR | +350.60% / 5.84% | +336.16% / 5.64% |
-| **买入持有累计收益 / CAGR** | **+777.70% / 8.53%** | **+738.63% / 8.24%** |
-| **A2 账户最大回撤 MDD** | **−20.29%** | **−20.29%** |
-| QQQ 买入持有最大回撤 MDD | **−82.96%** | **−82.96%** |
-
-[![2000—2026 A2-N20 与买入持有账户总资产及日度回撤对照](assets/a2_vs_buy_hold_equity_drawdown.svg)](assets/a2_vs_buy_hold_equity_drawdown.svg)
-
-**−82.96% 回撤之后，要上涨约 487% 才能回本。** 这段真实历史峰值出现在 2000-03-27，低谷在 2002-10-09，复权账户直到 **2015-02-20** 才收复前高，水下约 **14.9 年**。买入并持有终值是 A2 的近两倍，但能否承受长期水下、是否会在最差时期卖出，都是投资结果的一部分。**A2 历史 −20.29% 不是未来最大损失保证**；它也牺牲了约 2.6 个百分点的长期税前 CAGR，下一轮要继续研究这个权衡。
-
-**税务未包含在上表**：买入通常不产生已实现资本利得，但股票价差是否在卖出时纳税取决于个人**税务居民地**；即使一直不卖，QQQ 持有期间的分红仍可能发生美国预扣税。A2 多次平仓可能提前实现应税损益，Buy&Hold 通常延迟资本利得实现，但**不能**假定每个人最终一定要缴相同税率。复权收盘价只是**税前毛分红复投代理**，不是税后券商净值。中国税务居民的境外财产转让/股息分类所得、新加坡个人投资的一般免税待遇、美国非居民股息与价差分开的官方口径见[完整基准与税务报告](docs/research/A2_QQQ买入持有基准_回撤与税务口径_2026-11-10.md)。
-
-[独立基准结果 JSON](research/results/a2_vs_buy_hold_2026_07_13_and_11_09.json) · [月末账户资产/回撤 CSV](research/results/a2_vs_buy_hold_monthly_equity.csv) · [复现程序](research/experiments/a2_buy_hold_benchmark.py)。图按月末绘制以保持清晰，MDD 与 CAGR **按完整日线**计算；截止日 B&H 仍持仓，未扣假设的最终卖出费和个人税。
-
-## 全部历史买点、卖点和完整交易表 · 单张 SVG
-
-[![QQQ A2-N20 2000—2026 七段 K 线、所有买卖标记和 60 笔完整交易台账](assets/a2_trade_map_facets_2000_2026.svg)](assets/a2_trade_map_facets_2000_2026.svg)
-
-> **点击图片可放大，往下滚动到表格**。上半部分把全历史分成**七个四年区间**，各自独立价格刻度，背景用**周 K** 提升清晰度。蓝色上三角是开仓，橙色下三角是 N20 保护退出，紫色下三角是 MA20/60 趋势退出；若期末持仓才标星号。**60 次买入 / 60 次退出均按原始日线信号与次日开盘成交价定位；周 K 只用于画底图，不用于产生信号。**
-
-**下半部分是同一张 SVG 内嵌的完整交易台账**：60 行 × 13 列，逐笔展示买入/卖出信号日与次日实际成交日、复权买卖价格、退出原因、持有日数、含两次 0.05% 费用的净收益、持仓最高/最低收盘浮盈亏（MFE/MAE）及模拟卖后账户权益。盈利绿色、亏损红色；没有用文字另行猜测成交点。**交易时间截止 2026-11-09**，并非实时信号。完整可下载、可排序、可计算的机器可读版见 [60 笔原始派生交易 CSV](research/results/A2_current_trades_to_2026_11_09.csv)。这张 SVG 不含 HTML 或 JavaScript，所有表格文本都属于 SVG 本身。
-
-这张图可完全离线重新生成，无需 HTML 或交互式网页：
-
-```bash
-python -m pip install -e '.[charts]'
-python scripts/render_trade_chart_facets.py \
-  --csv sources/qqq_merged_updated_local.csv --end 2026-11-09
-```
-
-## 1. 运行
-
-环境：Python 3.10+。
-
-```bash
-python -m pip install -e .
+# 不依赖实时行情的回归测试
 python -m unittest discover -s tests -v
 ```
 
-把你有权使用的每日 QQQ OHLCV CSV 放到本地（`sources/` 已由 `.gitignore` 排除）。必须包含：`Date,Open,High,Low,Close,Adj Close`，可含 `Volume`。`Adj Close` 应与历史 `Open/High/Low/Close` 属于**同一原始价格基准**，程序会统一复权；不要用盘中未完成的日 K。
+[完整运行口径](docs/STRATEGY_H3_FROZEN.md) · [数据复权、授权与更新步骤](docs/DATA_SOURCES.md)。A/B 冻结脚本会校验截至 2026-11-11 的基准数值；使用不同数据或延长样本时须建立新版本，**不可为匹配旧结果修改冻结规则**。
 
-```bash
-# 自备单一数据源；适用于当前信号跟踪
-qqq-a2 --csv sources/qqq_daily.csv --start 2000-01-03 --out .a2-output
+## 5. 当前研究边界与其他版本
 
-# 精确复现研究时使用的两份相互重叠的历史源（须自行合法取得）
-qqq-a2 --old sources/qqq_jtang.csv --new sources/qqq_james.csv \
-  --start 2000-01-03 --end 2026-07-13 --out .a2-output
+本仓库包含 EMA V3/V2、SMA A2 V1 和大量成功/失败候选，但它们**不再逐条堆在首页**。统一从以下入口查看：
 
-# 使用同一份历史源独立核对全部58笔交易的日期、退出原因和回报
-python research/verify_frozen_baseline.py \
-  --old sources/qqq_jtang.csv --new sources/qqq_james.csv
-
-# 补全 2026-07-14 至 11-09（需自行获得、校验并放入本地的后续日线；原 CSV 不随仓库发布）
-python research/experiments/a2_forward_update.py \
-  --old sources/qqq_jtang.csv --new sources/qqq_james.csv \
-  --update sources/qqq_stockquote_2026_11_09.csv --asof 2026-11-09
-
-# 用补全后的每日 QQQ 历史重新计算当期状态
-qqq-a2 --csv sources/qqq_merged_updated_local.csv \
-  --start 2000-01-03 --end 2026-11-09 --out .a2-output
-
-# 与同起点 QQQ 买入并持有核对收益、日度 MDD 与历史最长水下期，生成静态对比图
-python research/experiments/a2_buy_hold_benchmark.py \
-  --old sources/qqq_jtang.csv --new sources/qqq_james.csv \
-  --csv sources/qqq_merged_updated_local.csv
-
-# 包含动态短端利率的空仓现金回放与图表（需要本地另外下载 DGS3MO）
-python research/experiments/a2_cash_yield_backtest.py \
-  --csv sources/qqq_merged_updated_local.csv \
-  --yield-csv sources/DGS3MO.csv --end 2026-11-09 \
-  --outdir research/results/forward_2026_11_09 \
-  --chart assets/a2_cash_yield_equity.svg
-
-# 亦可不安装命令入口：python -m qqq_a2 --csv ...
-```
-
-输出：
-
-- `.a2-output/trades.csv`：每次开仓、平仓、原因、净收益；
-- `.a2-output/equity.csv`：每天的账户权益、历史峰值、最大回撤、待执行方向；
-- `.a2-output/summary.json`：当前持仓/待执行信号、指标与完整策略统计。
-
-**冻结基准截至 2026-07-13；已扩展的本地研究样本截至 2026-11-09。两份结果分别保存。** 第一次运行实盘跟踪必须先更新最新日线，从历史开端逐日重建策略状态。如果现实账户空仓、系统显示历史模型已持仓，只记录影子持仓，不能把价格仍在 MA60 上方当成一笔新金叉。
-
-## 2. 冻结基准 A2 V1.0
-
-| 规则 | 公式与动作 |
+| 主题 | 文档 |
 |---|---|
-| 新金叉开仓 | `MA20[t] > MA60[t] && MA20[t-1] <= MA60[t-1]`，下个正常交易日开盘买 QQQ |
-| N20 早期保护 | 从**买入次日**算第1日到第20日，`MA10` **新下穿** `MA20`，且 `收盘价 < 该笔开盘买价`，次日开盘卖 |
-| 趋势退出 | `MA20[t] < MA60[t] && MA20[t-1] >= MA60[t-1]`，次日开盘卖 |
-| 卖出后 | 等新的 `MA20/60` 金叉。**MA10/20 金叉不直接重买** |
-| 发生两个退出信号 | MA20/60 死叉优先，其他研究警报不干涉 |
-| 测试假设 | QQQ 全进全出、单边手续费 0.05%、现金利息 0、滑点/税费 0；研究假设**不是建议配置100%家庭资产** |
+| 完整研究归档和原始规则 | [历史策略与实验索引](docs/research/INDEX.md) |
+| A/B 参数敏感性（ATR14/20/30 等） | [B 参数与 EMA 新形态事件研究](docs/research/H3_QQQ_B_ATR参数敏感性与EMA20_60近金叉失败_FAST再金叉_2026-11-13.md) |
+| 可迁移的多标的研究设计 | [H3 跨标的框架 v0.1](docs/research/H3_CROSS_ASSET_RESEARCH_SYSTEM_FRAMEWORK_V0_1.md) |
+| 历史独立冻结 SMA 基线 | [A2 V1.0](docs/STRATEGY_V1.md) |
+| 之前选定的 EMA V3 | [EMA V3 历史合同](docs/STRATEGY_SELECTED_V3.md) |
 
-完整定义、执行状态机、错失赢家与风险案例：[docs/STRATEGY_V1.md](docs/STRATEGY_V1.md)。
+**版本管理原则：** 本次把 H3 和 A/B v1.0 同步为 `main` 的**研究展示重点**，不是宣布它们成为生产交易系统或独立样本外验证通过。实验只增新版本，不覆盖冻结原始记录；默认只分析和报警、不发送交易订单。
 
-## 3. 核验过的历史结果
-
-**原冻结审计口径** `2000-01-03` 至 `2026-07-13`，**严格等待真实新金叉**、不人为带仓；本表留作历史不可变对照，新样本结果见页面顶部：
-
-| 指标 | A2-N20 V1.0 | 取消 N20 的反事实 |
-|---|---:|---:|
-| 已平仓 | **58** | 58 |
-| 赢家 / 输家 | **24 / 34** | 28 / 30 |
-| 胜率 | **41.38%** | 48.28% |
-| Payoff | **4.02** | 2.18 |
-| Profit Factor | **2.84** | 2.04 |
-| 账户 MDD | **−20.29%** | −31.88% |
-| CAGR | **5.84%** | 5.06% |
-| $100k 模拟期末权益 | **$450,596** | $370,052 |
-
-- **25 次 N20 出场**：16 次比无 N20 更好，9 次更差；2003-03-24 那笔 N20 −1.50%，没保护可赚 +34.98%（**反例**），但 2001/2004/2008/2015/2022 等保护明显减少多笔损失（**正例**）。
-- **58笔全部完成交易**、**25笔 N20 反事实**、**25次 B 两日观察**、**20次放量急跌退出实验**均保留在 `research/results/`，便于独立检查，而不只是附有漂亮指标的总结。
-- 起初档案的“59笔已完成”含一笔 `warm_start=True` 合成入场，不属于真实金叉策略；**官方 V1.0 是 58 笔已完成 + 期末1笔未平仓**。详见手册。
-
-> 这些是已看过全部历史的**样本内**结果，不是样本外证明；历史数据有分红与价格调整、开盘滑点、来源一致性等限制。仅凭 Payoff 高不能推断存在稳定超额收益。
-
-### A2 的空仓资金是否可以赚短期美债利息？
-
-**可以增加模拟期末资产，但不能据此推断降低 MDD。** 完全不改变 A2 交易信号和单边 0.05% 股票交易费，只让 A2 空仓时的美元现金按 [FRED `DGS3MO` 历史 3 个月期美国国债恒定到期收益率](https://fred.stlouisfed.org/series/DGS3MO) 累积参考利息。延长后覆盖 **2000-01-03 至 2026-11-09**；全部样本空仓日历天数约 **48.55%**，空仓时段的加权历史参考收益率约 **2.12%/年**。
-
-**完整更新口径（2000-01-03 — 2026-11-09，60笔已完成交易）：**
-
-| 空仓现金方案 | $100k 期末权益 | CAGR | 每日权益最大回撤 |
-|---|---:|---:|---:|
-| **原 A2：现金 0%** | **$436,163** | **5.64%** | **−20.29%** |
-| 历史 DGS3MO 浮动参考收益（毛） | $575,325 | 6.73% | −20.28% |
-| **历史 DGS3MO 减 15bp/年模拟摩擦** | **$564,179** | **6.66%** | **−20.33%** |
-| 假设**永远固定** 2%/年（非历史产品） | $566,161 | 6.67% | −19.58% |
-| 假设**永远固定** 3%/年（非历史产品） | $645,031 | 7.19% | −19.23% |
-| 假设**永远固定** 4%/年（非历史产品） | $734,883 | 7.71% | −18.87% |
-
-本次最新样本空仓现金净利率代理比零收益多 **$128,016**（全历史累计，不是7月以来的新增收益），但最大回撤仍略差。具体采用官方 2026-10-26 至 11-06 H.15 更新；**11月9日利率尚未公布时，严格使用上次已知的 11月6日报价**。图中按月末绘线，指标按全量日度权益计算：
-
-[![A2-N20 2000—2026-11-09 的空仓现金动态收益与账户资产/回撤曲线](assets/a2_cash_yield_equity.svg)](assets/a2_cash_yield_equity.svg)
-
-**历史冻结口径（仅截至2026-07-13，保留原研究对照，不与新表混用）：**
-
-| 空仓现金方案 | $100k 期末权益 | CAGR | 每日权益最大回撤 |
-|---|---:|---:|---:|
-| **原 A2：现金 0%** | **$450,596** | **5.84%** | **−20.29%** |
-| 历史 DGS3MO 浮动参考收益（毛） | $587,708 | 6.91% | −20.28% |
-| **历史 DGS3MO 减 15bp/年模拟摩擦** | **$576,562** | **6.83%** | **−20.33%** |
-| 假设**永远固定** 2%/年（非历史产品） | $581,668 | 6.86% | −19.58% |
-| 假设**永远固定** 3%/年（非历史产品） | $660,867 | 7.38% | −19.23% |
-| 假设**永远固定** 4%/年（非历史产品） | $750,846 | 7.90% | −18.87% |
-
-> **反直觉的反例**：在最新样本中，减 15bp 的浮动参考方案让期末资金增加约 **$128,016**、CAGR 多约 **1.02 个百分点**，但 MDD 由 −20.29% **略变差为 −20.33%**；因为累计利息同时改变每次历史权益高点，回撤是相对峰值计算的。**固定4% 26年是虚构利率路径**，不能当作稳健预期。上述 DGS3MO 不是可直接交易的资产净值；实际购买短债 ETF、滚动国库券、货币基金或定期存款，存在再投资利率、净值、成本、税费、资金可用时间和汇率等差异。
-
-方法、历史利率出处、权益计算公式、反例及复现命令详见 [原空仓美债独立报告（7月13日冻结）](docs/research/A2_空仓美债现金收益_独立回测_2026-11-10.md) 与 [补样复核报告（11月9日）](docs/research/A2_2026_07_14到11_09_样本扩展复核.md)。新 [六种场景对照 CSV](research/results/forward_2026_11_09/a2_cash_yield_scenarios.csv) · 新 [月末权益派生 CSV](research/results/forward_2026_11_09/a2_cash_yield_monthly_equity.csv)；原 [7月冻结场景数据](research/results/a2_cash_yield_scenarios.csv) 完整保留。此结果**不修改 A2 V1.0 冻结交易规则**。
-
-## 4. 数据与研究证据
-
-| 入口 | 内容 |
-|---|---|
-| [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | 历史源链接、拼接/复权算法、原始数据许可、缺失数据及数据质量 |
-| [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 所有参数与机制研究、证实/否定结果、样本偏差和复现方式 |
-| [docs/research/](docs/research/) | 原始独立研究报告和正反例分析原文 |
-| [research/results/](research/results/) | 逐笔交易、反事实事件、候选参数实验 CSV |
-| [research/a2_n20.py](research/a2_n20.py) | 旧版独立研究引擎（基准复现） |
-| [research/verify_frozen_baseline.py](research/verify_frozen_baseline.py) | 对照冻结台账核验58笔交易逐笔一致性 |
-| [research/experiments/](research/experiments/) | 对比实验脚本；部分 TQQQ 实验需要私有/另行授权数据 |
-| [research/experiments/a2_cash_yield_backtest.py](research/experiments/a2_cash_yield_backtest.py) | 按历史浮动短债利率、固定假设利率回放空仓现金，并生成资产曲线 |
-| [research/experiments/a2_buy_hold_benchmark.py](research/experiments/a2_buy_hold_benchmark.py) | 同一起点的独立 Buy&Hold 对照，输出两段结果、权益/MDD 图及税前口径说明 |
-| [research/experiments/a2_forward_update.py](research/experiments/a2_forward_update.py) | 校验新旧来源重叠/分红复权后，补齐完整日 K 并要求冻结58笔回测逐笔不变 |
-| [src/qqq_a2/](src/qqq_a2/) | 可以对自备行情运行的 **只读**策略执行器/命令行 |
-
-**注意**：仓库不公开无明确再分发授权的原始 QQQ/TQQQ 行情、FirstRate Data 数据或账户敏感信息。公开统计结果与实验代码不等于附带数据本身的使用授权。
-
-## 5. 如何继续研究而不污染 V1.0
-
-每个候选策略必须有独立名字/版本、独立输出、固定原 A2 对照；报告包括**失去的最大赢家、账户 MDD、交易频率和交易成本**，不能只选最好的参数或追着单个坏案例改公式。
-
-当前保留两个重点方向：
-
-1. **B 两日观察**：QQQ 单日跌≥3%、量≥过去20日均量1.2倍后再看2个交易日；如果第二个观察日收盘仍低于急跌日收盘，则下一开盘卖。原策略止损优先。历史 B 的 Payoff 4.19/CAGR6.42%，但 MDD −20.90% 反而略差，暂作**影子策略**。
-2. **未来 Agent/Skill**：先做只读数据完整性检查、当日收盘信号、证据引用、反事实仿真和警报；交易执行须以后单独授权、审计与风控。见 [docs/AGENT_ROADMAP.md](docs/AGENT_ROADMAP.md)。
-
-贡献请先阅读 [AGENTS.md](AGENTS.md) 和 [CONTRIBUTING.md](CONTRIBUTING.md)。欢迎独立复现、提交失败案例和新的可证伪假设。
-
-## 6. 协作与许可状态
-
-本仓库目前**尚未由作者选择开源软件许可证**。代码可以被 GitHub 用户查看/克隆，但这**不意味着**自动获得修改后再分发或商业使用许可。作者确认授权政策（常见选项 MIT / Apache-2.0）后再增加正式 `LICENSE`。第三方行情数据必须分别遵守自己的条款。
-
-**免责声明**：本项目为研究、教育和模拟跟踪用途，不提供任何可保证收益的交易信号、投资建议或自动订单服务。
+最后历史数据日期：**2026-11-11**。若需要当前交易信号，必须获取最新的完整美东日K，重新运行整个 H3 状态机，不能复用旧的 `FLAT` 标记。
