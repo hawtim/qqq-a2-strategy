@@ -88,6 +88,42 @@ def find_pattern(s,t,lookback,near,widen,drop,approach):
         "approach_confirmed_5d_prior_atr":(prior_gap-p_gap)/denom,
         "ema20_local_low_date":str(s.at[min20idx,"Date"].date()),
     }
+def find_near_control(s,t,lookback=40,near=1.0,widen=None):
+    """Stepwise controls, not the user's full 'fall away' morphology.
+
+    NEAR_ONLY: slow EMA20 once approached from below but did not cross,
+    and FAST gold followed 3+ bars later without a slow gold in between.
+    NEAR_WIDEN: as above, current slow gap is at least .25 ATR wider.
+    These isolate whether a strict EMA20 drop/approach threshold produced
+    a tiny sample. They are NOT equivalent to the full pattern.
+    """
+    if t<lookback+65 or not bool(s.at[t,"fast_gold"]):
+        return None
+    if not bool(s.at[t,"slow_bear"]):return None
+    past=s.iloc[t-lookback:t-2]
+    past=past.loc[past.slow_bear & past.atr20.gt(0)]
+    if past.empty:return None
+    p=int(past.gap_atr.idxmin())
+    if p<5 or t-p<3:return None
+    if not np.isfinite(s.at[p,"gap_atr"]) or s.at[p,"gap_atr"]>near:return None
+    if not bool(s.iloc[p:t+1].slow_bear.all()):return None
+    pdist=float(s.at[p,"ma60"]-s.at[p,"ma20"])
+    nowgap=float(s.at[t,"ma60"]-s.at[t,"ma20"])
+    atr=float(s.at[t,"atr20"])
+    if not np.isfinite(atr) or atr<=0:return None
+    if widen is not None and nowgap-pdist < widen*atr:return None
+    return {
+        "approach_date":str(s.at[p,"Date"].date()),
+        "approach_to_signal_sessions":int(t-p),
+        "approach_gap_atr":float(s.at[p,"gap_atr"]),
+        "now_gap_atr":float(s.at[t,"gap_atr"]),
+        "old_gap_raw":pdist,
+        "now_gap_raw":nowgap,
+        "ema20_drop_since_near_atr":None,
+        "approach_confirmed_5d_prior_atr":None,
+        "ema20_local_low_date":"",
+    }
+
 def forward(s,t,h,buy):
     if t+h>=len(s):return {"complete":False}
     path=s.iloc[t+1:t+h+1]
@@ -234,10 +270,22 @@ def main():
             row=assess(s,t,name,patt)
             row["signal_index"]=int(t)
             allrows.append(row)
+        for name,near,widen in [
+            ("NEAR_1ATR_ONLY",1.0,None),
+            ("NEAR_1ATR_WIDEN025",1.0,.25),
+            ("NEAR_2ATR_WIDEN025",2.0,.25),
+        ]:
+            near_observation=find_near_control(
+                s,t,lookback=40,near=near,widen=widen)
+            if near_observation is None:continue
+            row=assess(s,t,name,near_observation)
+            row["signal_index"]=int(t)
+            allrows.append(row)
     if not allrows:raise AssertionError("No eligible FAST gold signals at all")
     events=pd.DataFrame(allrows)
     events.to_csv(out/"all_fast_gold_slow_bear_and_near_miss_patterns.csv",index=False)
-    defs=["ALL_FAST_SLOW_BEAR"]+[z[0] for z in DEFINITIONS]
+    defs=["ALL_FAST_SLOW_BEAR"]+[z[0] for z in DEFINITIONS]+[
+        "NEAR_1ATR_ONLY","NEAR_1ATR_WIDEN025","NEAR_2ATR_WIDEN025"]
     sums=[]
     for definition in defs:
         for case in ("ALL","H3_FLAT","H3_FLAT_BLOCKED_GLOBAL"):
@@ -283,6 +331,12 @@ def main():
         "entry":"fresh EMA10/20 gold at complete daily close, next-session adjusted open, no monthly entry veto in event-study selection",
         "near_miss":"gap=(EMA60-EMA20)>0, near within last 30 or 40 sessions excluding last 2, min normalized gap <= near ATR20, gap was shrinking 5 sessions earlier, EMA20 subsequently drops and gap widens, never actual slow gold; later FAST gold while still slow-bear",
         "definitions":DEFINITIONS,
+        "staged_controls":{
+            "NEAR_1ATR_ONLY":"only near prior slow bull crossover from BELOW, then fresh fast gold, no actual slow cross in between; not necessarily EMA20 pullback",
+            "NEAR_1ATR_WIDEN025":"prior 1 ATR proximity + widening of 20/60 gap by at least 0.25 ATR from minimum; not necessarily actual EMA20 downward",
+            "NEAR_2ATR_WIDEN025":"same but less tight nearest 20/60 proximity of 2 ATR",
+            "purpose":"diagnose sample attrition, NOT replacement for full failed-approach-then-retreat definition"
+        },
         "benchmark":"all fresh FAST gold with EMA20<EMA60; optionally restrict original H3 flat or global month veto",
         "success":"20/60 session close positive after next open entry, AND actual independent EMA10/20 fast death next-open exit net return as descriptive standalone cycle, AND 60d first hit +8% vs -7% outcome",
         "overlap":"forward20/60 signals can overlap, 60-session nonoverlap selection provided; no independent claims",
