@@ -2,10 +2,18 @@ name: H3 Profit Guard A/B v1 Candidate Freeze Audit
 on:
   push:
     branches:
+      - main
       - research/v3-1-cross-asset-deferred-fast
     paths:
       - research/config/h3_profit_guard_ab_v1.json
       - research/experiments/h3_profit_guard_ab_v1_frozen.py
+      - research/experiments/h3_midcycle_fast_ema_overlay_reentry.py
+      - research/experiments/h3_profit_n10_ema_guard_shadow_overlay.py
+      - research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py
+      - research/experiments/a2_month_ema5_slope_regime.py
+      - docs/STRATEGY_H3_FROZEN.md
+      - docs/STRATEGY_H3_PROFIT_GUARD_AB_V1.md
+      - README.md
       - .github/workflows/h3_profit_guard_ab_v1_frozen.yml
   workflow_dispatch:
 jobs:
