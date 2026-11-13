@@ -1,0 +1,22 @@
+name: H3 Cross-Asset Research Framework V0.1 Contract
+on:
+  push:
+    branches:
+      - research/v3-1-cross-asset-deferred-fast
+    paths:
+      - docs/research/H3_CROSS_ASSET_RESEARCH_SYSTEM_FRAMEWORK_V0_1.md
+      - research/config/h3_cross_asset_research_framework_v0_1.json
+      - research/experiments/validate_h3_cross_asset_framework_contract_v0_1.py
+      - .github/workflows/h3_cross_asset_framework_v0_1_contract.yml
+  workflow_dispatch:
+jobs:
+  validate-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate frozen baselines and non-executable modular research spec
+        run: python research/experiments/validate_h3_cross_asset_framework_contract_v0_1.py
