@@ -1,0 +1,27 @@
+name: H3 R1 0 3 5 Trend Recovery Exception Full Replay
+on:
+  push:
+    branches:
+      - research/v3-1-cross-asset-deferred-fast
+    paths:
+      - research/experiments/h3_r1_trend_recovery_override_engine.py
+      - research/experiments/h3_r1_0_3_5_trend_recovery_backtest.py
+      - .github/workflows/h3_r1_trend_recovery.yml
+  workflow_dispatch:
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e '.[dev]'
+      - run: python research/experiments/h3_r1_0_3_5_trend_recovery_backtest.py --outdir research/results/h3_r1_0_3_5_trend_recovery_2026_11_11
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h3-r1-0-3-5-trend-recovery-account
+          path: research/results/h3_r1_0_3_5_trend_recovery_2026_11_11/
+          if-no-files-found: warn
