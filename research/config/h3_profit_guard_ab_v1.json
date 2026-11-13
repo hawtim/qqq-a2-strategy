@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "status": "research_candidate_frozen",
+  "asof_utc_date": "2026-11-13",
+  "baseline": "H3_FROZEN",
+  "ticker": "QQQ",
+  "start": "2000-01-03",
+  "end": "2026-11-11",
+  "entry_cash_usd": 100000,
+  "fee_per_side": 0.0005,
+  "cash_interest": 0,
+  "execution": "signal_at_completed_daily_close_fill_next_regular_open",
+  "slippage": 0,
+  "tax": 0,
+  "shadow_policy": {
+    "original_h3_entry_exit_untouched": true,
+    "baseline_original_h3_exit_priority": true,
+    "allow_extension_past_original_h3_exit": false,
+    "reset_per_original_h3_entry": true,
+    "no_reentry_without_active_h3_shadow": true,
+    "original_n20_monthly_fast_not_reset_by_overlay": true
+  },
+  "shared": {
+    "first_profit_peak_at_least": 0.1,
+    "peak_measure": "max adjusted close / original H3 adjusted entry open - 1; as-of signal day only",
+    "current_profit_must_be_positive": true,
+    "initial_hold_age_min_sessions": 0,
+    "ema20_greater_than_ema60": true,
+    "max_extra_exits_per_base_position": 1,
+    "max_extra_reentries_per_base_position": 1,
+    "exit_signal": "ema5 fresh death-cross ema20",
+    "exit_definition": "ema5[t]<ema20[t] and ema5[t-1]>=ema20[t-1]",
+    "special_reentry_signal": "ema5 fresh golden-cross ema10 with ema20>ema60, while original H3 shadow active",
+    "reentry_definition": "ema5[t]>ema10[t] and ema5[t-1]<=ema10[t-1]",
+    "may_reenter_above_last_sale": true,
+    "no_profit_giveback_50pct_live_trigger": true,
+    "daily_ema_adjust": false,
+    "atr_definition": "simple mean of 20 true ranges including completed signal day"
+  },
+  "variants": [
+    {
+      "id": "H3_PG_A_V1_AGE0_CAP1",
+      "name": "A",
+      "exit_rule": "cross5_20",
+      "reentry_rule": "cross5_10",
+      "min_entry_age_sessions": 0,
+      "max_cycles": 1,
+      "peak_min": 0.1,
+      "additional_conditions": []
+    },
+    {
+      "id": "H3_PG_B_V1_AGE0_CAP1",
+      "name": "B",
+      "exit_rule": "cross5_20_pre10_fast",
+      "reentry_rule": "cross5_10",
+      "min_entry_age_sessions": 0,
+      "max_cycles": 1,
+      "peak_min": 0.1,
+      "additional_conditions": [
+        "EMA10[t]>EMA20[t]",
+        "(AdjClose[t-3]-AdjClose[t])/ATR20[t]>=1.5"
+      ]
+    }
+  ],
+  "benchmark_sample": {
+    "qqq_H3_completed_trades": 60,
+    "age_min_sensitivity": "age10==age3==age0 daily signals and account equity for both A/B in sample",
+    "A_expected_cagr_approx": 0.1068802,
+    "A_expected_mdd_approx": -0.2394483,
+    "A_expected_extra_exits": 28,
+    "A_expected_extra_reentries": 18,
+    "B_expected_cagr_approx": 0.1100949,
+    "B_expected_mdd_approx": -0.2429988,
+    "B_expected_extra_exits": 22,
+    "B_expected_extra_reentries": 12,
+    "H3_expected_cagr_approx": 0.0988721
+  },
+  "external_validation": {
+    "spy_not_yet_tested": true,
+    "nikkei225_not_yet_tested": true,
+    "out_of_sample_not_proven": true
+  }
+}
