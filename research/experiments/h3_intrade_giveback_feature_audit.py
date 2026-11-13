@@ -118,6 +118,14 @@ def one_symbol(symbol,end):
         risk_max=w.giveback.dropna().max() if w.giveback.notna().any() else float("nan")
         trend_at_peak=bool(peak_row.h3_ema20>peak_row.h3_ema60)
         trend_at_event=bool(event_row.h3_ema20>event_row.h3_ema60) if interim else None
+        # A 50%-giveback event can be a normal mid-cycle pullback that later
+        # completely recovers. Do not equate the event with an economic loss.
+        pre_event_peak_idx=int(w.loc[:first_event,"r"].idxmax()) if interim else None
+        pre_event_peak_r=float(w.loc[first_event,"peak_r"]) if interim else None
+        later=w.loc[first_event+1:] if interim else w.iloc[0:0]
+        recovered_prior_peak=bool((later.r>=pre_event_peak_r).any()) if len(later) else False
+        recovery_first=int(later.loc[later.r>=pre_event_peak_r].index[0]) if recovered_prior_peak else None
+        reached_prior_profit80=bool((later.r>=.80*pre_event_peak_r).any()) if len(later) else False
         rows.append({
             "ticker":symbol,"trade_id":int(t.id),"entry_date":t.entry_date,
             "exit_signal":t.exit_signal_date,"exit_date":t.exit_date,
@@ -135,8 +143,12 @@ def one_symbol(symbol,end):
             "price_dd_ge15":maxprice_dd>=.15,
             "first_20pct_giveback_date":str(d.loc[first_warning].Date.date()) if first_warning is not None else "",
             "first_50pct_giveback_date":str(event_row.Date.date()) if interim else "",
-            "days_from_peak_to_50pct":first_event-peak_idx if interim else np.nan,
+            "days_from_prior_observed_peak_to_first50":first_event-pre_event_peak_idx if interim else np.nan,
             "days_event_to_h3_exit":last-first_event if interim else np.nan,
+            "new_global_peak_after_first50":bool(peak_idx>first_event) if interim else None,
+            "recovered_pre_event_peak_before_h3_exit":recovered_prior_peak if interim else None,
+            "regained_80pct_pre_event_profit":reached_prior_profit80 if interim else None,
+            "sessions_to_recover_pre_event_peak":recovery_first-first_event if recovery_first is not None else np.nan,
             "ema20_gt_ema60_at_peak":trend_at_peak,
             "ema20_gt_ema60_at_first50":trend_at_event,
             "price_below_ema20_at_first50":bool(event_row.price_below_ema20) if interim else None,
@@ -155,6 +167,10 @@ def one_symbol(symbol,end):
                 "warning_date":str(d.loc[first_warning].Date.date()) if first_warning is not None else "",
                 "local_peak_date_prior_to_event":str(d.loc[preceding_high].Date.date()),
                 "event_date":str(d.loc[event_d].Date.date()),
+                "recovered_pre_event_peak_before_h3_exit":recovered_prior_peak,
+                "regained_80pct_pre_event_profit":reached_prior_profit80,
+                "days_since_pre_event_peak":event_d-preceding_high,
+                "days_until_recover_pre_event_peak":recovery_first-event_d if recovery_first is not None else np.nan,
                 "price_dd_pct_at_event":100*float(w.loc[event_d,"price_dd"]),
                 "peak_gain_pct_asof_event":100*float(w.loc[event_d,"peak_r"]),
                 "profit_giveback_at_event":float(w.loc[event_d,"giveback"]),
@@ -221,6 +237,9 @@ def cohort_summary(cases,warn):
             "max_price_dd_ge15pct":int(g.price_dd_ge15.sum()),
             "event_while_ema20_gt60":int(hits.ema20_gt_ema60_at_first50.sum()),
             "event_while_price_below_ema20":int(hits.price_below_ema20_at_first50.sum()),
+            "event_later_recovers_prior_peak":int(hits.recovered_pre_event_peak_before_h3_exit.sum()),
+            "event_later_regains80pct_prior_profit":int(hits.regained_80pct_pre_event_profit.sum()),
+            "event_then_global_peak_later":int(hits.new_global_peak_after_first50.sum()),
             "event_days_until_h3_exit_median":float(hits.days_event_to_h3_exit.median()) if len(hits) else None,
             "event_price_dd_pct_median":float(hits.max_intrade_price_dd_pct.median()) if len(hits) else None,
             "first20_warning_trades":len(w),
