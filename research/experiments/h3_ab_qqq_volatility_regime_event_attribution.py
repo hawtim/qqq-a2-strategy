@@ -170,7 +170,7 @@ def paired_windows(trades,events,features):
     p["first_divergence_signal_date"]=p.A_first_sell_signal.where(
         p.different_extra_exit_timing)
     vol=features[["Date","rv20_ann","rv5_ann",
-        "decline3_atr20","trend_bull","ma10","ma20"]].copy()
+        "decline3_atr20","trend_bull","ema10","ema20"]].copy()
     vol["Date"]=vol.Date.dt.strftime("%Y-%m-%d")
     p=p.merge(vol.rename(columns={
         "Date":"first_divergence_signal_date",
@@ -178,8 +178,8 @@ def paired_windows(trades,events,features):
         "rv5_ann":"rv5_at_divergence",
         "decline3_atr20":"decline3_atr_at_divergence",
         "trend_bull":"slow_trend_bull_at_divergence",
-        "ma10":"ma10_at_divergence",
-        "ma20":"ma20_at_divergence"}),
+        "ema10":"ma10_at_divergence",
+        "ema20":"ma20_at_divergence"}),
         on="first_divergence_signal_date",how="left",
         validate="many_to_one")
     p["divergence_vol_bin"]=p.rv20_at_divergence.map(vol_bin)
