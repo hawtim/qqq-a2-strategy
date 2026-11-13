@@ -1,5 +1,7 @@
 # QQQ A2-N20 · 可复现的日线趋势策略
 
+> **2026-11-13｜跨标的可配置 H3 研究系统 v0.1（架构规范）**：已把原H3冻结状态机、A/B独立利润保护、B的ATR14/20/30×1.0/1.5/2.0候选、新的“EMA20/60接近失败→FAST再金叉”形态、波动率/仓位状态及跨标的验证流程分层。[统一架构、候选优先级和失败模式](docs/research/H3_CROSS_ASSET_RESEARCH_SYSTEM_FRAMEWORK_V0_1.md) · [机器可读的非执行研究配置](research/config/h3_cross_asset_research_framework_v0_1.json)。**这是先冻结边界和参数选择协议，不是已实现的多标的交易引擎；SPY/日经还没有基于此框架跑出专属系数。冻结H3与A/B v1.0完全不变。**
+
 > **当前分支：V3.1-A 跨标的验证（尚未提升为正式策略）。** 本分支在原 V3 上仅增加「卖出后被月线拦截的 FAST 金叉资格延续」。原 V3 默认规则仍保持冻结。  
 > [完整规则、QQQ/SPY 正反测试与复现](docs/research/V3_1_A_FAST资格延续_跨标的QQQ_SPY_2026-11-12.md) · [独立执行入口](research/experiments/a2_v3_1_cross_asset.py) · [派生对照统计](research/results/v3_1_cross_asset_2026_07_13/summary.csv) · [QQQ 新增 FAST 交易](research/results/v3_1_cross_asset_2026_07_13/qqq_candidate_only_completed_trades.csv)  
 > **QQQ 截至 2026-07-13:** V3 $924,686 / CAGR 8.747% / MDD −19.68%；A $928,191 / CAGR 8.763% / MDD −19.42%。该截止日两者有未平仓头寸；禁止与 2026-11-09 的冻结 V3 期末资产混比。当前属于历史样本内研究，不代表今天的实时仓位或自动交易许可。
