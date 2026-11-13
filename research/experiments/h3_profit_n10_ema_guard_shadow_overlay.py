@@ -45,14 +45,14 @@ def features(d, signals):
     x=d.copy()
     # All EMAs on dividend/split-adjusted closes as of completed session.
     x["ema5"]=x.adj_close.ewm(span=5,adjust=False).mean()
-    x["ema10"]=x.adj_close.ewm(span=10,adjust=False).mean()
-    x["ema20"]=x.adj_close.ewm(span=20,adjust=False).mean()
-    x["ema60"]=x.adj_close.ewm(span=60,adjust=False).mean()
+    x["ema10"]=x.adj_close.ewm(span=10,adjust=False,min_periods=10).mean()
+    x["ema20"]=x.adj_close.ewm(span=20,adjust=False,min_periods=20).mean()
+    x["ema60"]=x.adj_close.ewm(span=60,adjust=False,min_periods=60).mean()
     # Prevent an EMA initialization mismatch between the base H3
     # engine and the overlay. EMA10/20 already in signals.
-    assert np.allclose(x.ema10,signals.ma10)
-    assert np.allclose(x.ema20,signals.ma20)
-    assert np.allclose(x.ema60,signals.ma60)
+    assert np.allclose(x.ema10,signals.ma10,equal_nan=True)
+    assert np.allclose(x.ema20,signals.ma20,equal_nan=True)
+    assert np.allclose(x.ema60,signals.ma60,equal_nan=True)
     for slow in (10,20):
         f=x.ema5; s=x[f"ema{slow}"]
         x[f"death_5_{slow}"]=(f<s)&(f.shift(1)>=s.shift(1))
