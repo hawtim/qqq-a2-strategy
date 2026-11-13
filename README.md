@@ -7,6 +7,8 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+**H3 QQQ+GOOGL 中途回吐 50% 全交易量化（2026-11-13）**：[118 笔交易、38 次利润回吐事件、先前20%预警处多指标对照、恢复与未恢复案例](docs/research/H3_QQQ_GOOGL_持仓中途利润回吐50_全交易特征分析_2026-11-13.md) · [衍生汇总 CSV](research/results/h3_giveback_feature_audit_2026_11_11/summary.csv) · [复现脚本](research/experiments/h3_intrade_giveback_feature_audit.py)。两个资产均未找到足以直接上线的统一高置信度单指标，冻结 H3 不变。
+
 **H3 下一阶段 Peak Giveback 研究计划（2026-11-13）**：[以最高浮盈被吐回 ≥50% 为主要事后事件标签（允许超过 100%），逐项验证量价背离、RSI/MACD、EMA/趋势破坏、ATR/波动率和市场广度；再做严谨重入与完整账户回测](docs/research/H3_Peak_Profit_Giveback比例标签与多指标顶部验证_研究计划_2026-11-13.md)。这是未跑的新研究定义，旧固定 15pp 的量能实验统计保留、不改写；冻结 H3 不变。
 
 **H3 量能衰竭与高浮盈回吐（2026-11-13）**：[QQQ + GOOGL 五组价量止盈信号、峰值特征及卖飞失败案例](docs/research/H3_量能衰竭与高浮盈回撤_2026-11-13.md) · [研究脚本](research/experiments/h3_volume_peak_exhaustion.py)。仅单腿提前卖出价格对照，不是完整账户 CAGR/MDD，**冻结 H3 保持不变**。
