@@ -247,6 +247,24 @@ def simulate(x,frozen,arm,peak_min,exit_cross,re_cross,start_date,labels):
     }
     return d,led,act,stats
 
+def buy_hold_comparator(x,start_date):
+    b=x.loc[x.Date>=pd.Timestamp(start_date)].copy()
+    start=b.iloc[0]
+    shares=100000/(float(start.adj_open)*(1+FEE))
+    equities=b.adj_close.to_numpy()*shares
+    years=(pd.Timestamp(b.Date.iloc[-1])-pd.Timestamp(start_date)).days/365.25
+    return {
+        "end_equity":float(equities[-1]),
+        "cagr":float((equities[-1]/100000)**(1/years)-1),
+        "mdd":float((equities/np.maximum.accumulate(equities)-1).min()),
+        "buy_date":str(start.Date.date()),
+        "initial_price":float(start.adj_open),
+        "fee_per_side":FEE,
+        "terminal_sell":False,
+        "same_start_date":start_date,
+        "same_end_date":str(b.Date.iloc[-1].date()),
+    }
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--end",default="2026-11-11")
@@ -265,12 +283,15 @@ def main():
         x=features(d,frozen_signals)
         baseline_curve=frozen["equity"]
         labels=describe_giveback(x,frozen["trades"])
+        bh=buy_hold_comparator(x,start_date)
         manifest["by_symbol"][ticker]={
             "source":prov,"start":start_date,"end":args.end,
             "frozen_h3_stats":frozen["stats"],
+            "buy_hold_baseline":bh,
             "n_completed_frozen_trades":len(frozen["trades"]),
         }
         print("H3_PROFIT_GUARD_FROZEN",ticker,json.dumps(frozen["stats"],default=str))
+        print("H3_PROFIT_GUARD_BUY_HOLD",ticker,json.dumps(bh,default=str))
         for arm,peak,exc,rec in ARMS:
             curve,ledger,actions,stats=simulate(x,frozen,arm,peak,exc,rec,start_date,labels)
             # Validates our independent shadow-ledger account accounting.
