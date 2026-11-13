@@ -99,6 +99,11 @@ def one_symbol(symbol,end):
         w["px_hwm"]=w.adj_close.cummax()
         w["price_dd"]=1.-w.adj_close/w.px_hwm
         w["giveback"]=np.where(w.peak_r>=MIN_PEAK,(w.peak_r-w.r)/w.peak_r,np.nan)
+        # Sensitivity bands must require the qualifying peak AS-OF the event.
+        # A later 30% peak cannot retroactively turn an earlier 11% peak
+        # giveback into a qualifying 20%-peak event.
+        w["giveback_peak5"]=np.where(w.peak_r>=.05,(w.peak_r-w.r)/w.peak_r,np.nan)
+        w["giveback_peak20"]=np.where(w.peak_r>=.20,(w.peak_r-w.r)/w.peak_r,np.nan)
         meets=w.loc[(w.peak_r>=MIN_PEAK)&(w.giveback>=PROFIT_GIVEBACK_EVENT)]
         warn=w.loc[(w.peak_r>=MIN_PEAK)&(w.giveback>=PROFIT_GIVEBACK_WARN)]
         # Trade-level global descriptors, not a causal prediction.
@@ -137,6 +142,8 @@ def one_symbol(symbol,end):
             "exit_giveback_ge50":bool(exit_giveback>=.5) if np.isfinite(exit_giveback) else False,
             "max_intrade_giveback_ratio":float(risk_max),
             "intrade_giveback_ge50":interim,
+            "intrade_giveback_ge50_after_peak5":bool((w.giveback_peak5>=.50).any()),
+            "intrade_giveback_ge50_after_peak20":bool((w.giveback_peak20>=.50).any()),
             "max_intrade_price_dd_pct":100*maxprice_dd,
             "price_dd_ge8":maxprice_dd>=.08,
             "price_dd_ge12":maxprice_dd>=.12,
@@ -228,8 +235,12 @@ def cohort_summary(cases,warn):
         e=g[g.exit_giveback_ge50]
         w=warn[warn.ticker==ticker]
         out.append({"ticker":ticker,"total_completed_h3_trades":n,
+            "ever_peak_profit_ge5pct":int((g.max_close_profit_pct>=5).sum()),
             "ever_peak_profit_ge10pct":len(qual),
+            "ever_peak_profit_ge20pct":int((g.max_close_profit_pct>=20).sum()),
+            "intrade_giveback_50_after_peak5":int(g.intrade_giveback_ge50_after_peak5.sum()),
             "intrade_profit_giveback_ge50pct":len(hits),
+            "intrade_giveback_50_after_peak20":int(g.intrade_giveback_ge50_after_peak20.sum()),
             "intrade_giveback_rate_among_peak_ge10":len(hits)/len(qual) if len(qual) else None,
             "giveback_ge50_at_exit":len(e),
             "max_price_dd_ge8pct":int(g.price_dd_ge8.sum()),
@@ -293,6 +304,7 @@ def main():
         "completed_trade_count":len(cases),
         "no_change_to_h3":True,
         "intratrade_event_label":"asof peak CLOSE gross return >=10% and (peak_close_return - current_close_return) / peak_close_return >=.5",
+        "sensitivity_peak_floors":"5%, 10%, 20% each evaluated using as-of peak gain AT THE EVENT; no retroactive later larger peak qualification",
         "exit_label":"total peak CLOSE return vs actual H3 next-open realized net return, may include overnight exit gap and fees",
         "warning_label":"first bar of peak gain>=10% and asof giveback>=20%",
         "indicator_comparison":"trades with at least 20 remaining sessions, feature at first 20% warning; outcome first 50% crossing within 20 subsequent sessions",
