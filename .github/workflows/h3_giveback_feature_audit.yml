@@ -1,0 +1,25 @@
+name: H3 intra-trade giveback feature audit
+on:
+  push:
+    branches:
+      - research/v3-1-cross-asset-deferred-fast
+    paths:
+      - research/experiments/h3_intrade_giveback_feature_audit.py
+      - .github/workflows/h3_giveback_feature_audit.yml
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[dev]'
+      - run: python research/experiments/h3_intrade_giveback_feature_audit.py --end 2026-11-11 --outdir research/results/h3_giveback_feature_audit_run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h3-intrade-giveback-feature-audit
+          path: research/results/h3_giveback_feature_audit_run/
+          if-no-files-found: warn
