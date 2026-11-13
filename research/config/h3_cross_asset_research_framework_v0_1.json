@@ -1,0 +1,249 @@
+{
+  "schema_version": "0.1.0",
+  "type": "cross_asset_research_contract_not_executable_strategy",
+  "status": "DESIGN_SPEC_ONLY",
+  "asof_date": "2026-11-13",
+  "canonical_contract": "docs/research/H3_CROSS_ASSET_RESEARCH_SYSTEM_FRAMEWORK_V0_1.md",
+  "reference_versions": {
+    "core": "H3_FROZEN",
+    "selected_v3_reference": "research/experiments/a2_v3_selected.py",
+    "h3_reference": "research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py",
+    "profit_guard_frozen": "research/config/h3_profit_guard_ab_v1.json",
+    "profit_guard_contract": "docs/STRATEGY_H3_PROFIT_GUARD_AB_V1.md"
+  },
+  "invariants": {
+    "price_adjustment": "consistent_split_and_distribution_adjusted_OHLC",
+    "indicator_asof": "only_completed_daily_weekly_monthly_bars",
+    "signal_generation": "completed_daily_close",
+    "execution": "next_regular_session_open",
+    "event_precedence": "original_H3_forced_exits_override_profit_guard_and_entry_overlays",
+    "baseline_state": "H3_shadow_entry_exit_N20_monthly_deferred_FAST_untouched_by_guard_overlay",
+    "start_rule": "natural_start_after_required_warmup_no_synthetic_initial_position",
+    "fees_per_side": 0.0005,
+    "extra_slippage": 0,
+    "cash_yield": 0,
+    "tax": 0,
+    "no_short": true,
+    "no_leverage": true,
+    "no_live_execution_authorization": true,
+    "notes": "Comparison defaults are reference backtest assumptions only; each market must also run realistic costs, currency and cash yield sensitivity"
+  },
+  "frozen_qqq_reference": {
+    "sample_start": "2000-01-03",
+    "sample_end": "2026-11-11",
+    "initial_equity": 100000,
+    "completed_h3_trades": 60,
+    "H3_cagr_approx": 0.09887,
+    "H3_mdd_approx": -0.243,
+    "A_v1_cagr_approx": 0.10688,
+    "A_v1_mdd_approx": -0.23945,
+    "B_v1_cagr_approx": 0.1101,
+    "B_v1_mdd_approx": -0.243
+  },
+  "asset_profiles": [
+    {
+      "asset_id": "QQQ",
+      "instrument": "NASDAQ100_ETF",
+      "trade_currency": "USD",
+      "data_status": "REFERENCE_QQQ_ONLY",
+      "parameter_status": "FROZEN_H3_WITH_CANDIDATES_NOT_PRODUCTION"
+    },
+    {
+      "asset_id": "SPY",
+      "instrument": "SP500_ETF",
+      "trade_currency": "USD",
+      "data_status": "NEEDS_INDEPENDENT_VALIDATION",
+      "parameter_status": "UNSELECTED"
+    },
+    {
+      "asset_id": "NIKKEI225_PROXY_TBD",
+      "instrument": "INVESTABLE_NIKKEI225_TRACKING_ETF_TO_SELECT",
+      "trade_currency": "JPY_OR_AS_TRADED",
+      "data_status": "PROXY_AND_ADJUSTED_PRICES_NOT_YET_CHOSEN",
+      "parameter_status": "UNSELECTED"
+    },
+    {
+      "asset_id": "TQQQ",
+      "instrument": "DAILY_RESET_LEVERAGED_ETF",
+      "trade_currency": "USD",
+      "data_status": "SEPARATE_RISK_MODEL_REQUIRED",
+      "parameter_status": "DO_NOT_INHERIT_QQQ_PARAMS"
+    },
+    {
+      "asset_id": "QQQI",
+      "instrument": "OPTION_INCOME_DISTRIBUTION_ETF",
+      "trade_currency": "USD",
+      "data_status": "DISTRIBUTION_AND_TOTAL_RETURN_MODEL_REQUIRED",
+      "parameter_status": "DO_NOT_INHERIT_QQQ_PARAMS"
+    }
+  ],
+  "layer_status": {
+    "core_trend": {
+      "id": "H3_FROZEN",
+      "status": "FROZEN_REFERENCE",
+      "entry_modes": [
+        "EMA20_60_REGULAR",
+        "EMA10_20_FAST_AS_DEFINED_IN_H3"
+      ],
+      "monthly_gate": "up_slow_veto_1_abs",
+      "n20_and_stops": "INHERIT_NATIVE_FROZEN_H3"
+    },
+    "entry_shape": {
+      "id": "FAILED_SLOW_NEAR_CROSS_THEN_FAST_GOLD",
+      "status": "EVENT_STUDY_ONLY_INSUFFICIENT_N",
+      "enabled_for_orders": false,
+      "observed_core_events_QQQ": 1,
+      "observed_broad_full_events_QQQ": 2,
+      "signal_side": "EMA20_BELOW_EMA60",
+      "parameter_space": {
+        "lookback_sessions": [
+          30,
+          40
+        ],
+        "near_distance_ATR20_max": [
+          0.3,
+          0.5,
+          1
+        ],
+        "min_rewiden_ATR20": [
+          0.25,
+          0.4,
+          0.6
+        ],
+        "min_EMA20_fall_ATR20": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "fresh_EMA10_20_gold": true
+      },
+      "warning": "Full morphology and near-only controls are distinct; no H3 full-account override tested"
+    },
+    "profit_guard": {
+      "candidate_ids": [
+        "NONE",
+        "A_V1_FROZEN",
+        "B_V1_FROZEN",
+        "B_SENSITIVITY"
+      ],
+      "default": "NONE",
+      "common_conditions": "H3_shadow_active AND peak_completed_close_profit>=0.10 AND current_profit>0 AND EMA20>EMA60 AND no_prior_extra_sell",
+      "A_exit": "FRESH_EMA5_20_DEATH",
+      "B_extra_conditions": "EMA10>EMA20 AND (AdjClose[t-3]-AdjClose[t])/ATR_N[t]>=K",
+      "B_frozen": {
+        "atr_window": 20,
+        "decline_window_sessions": 3,
+        "atr_multiplier": 1.5,
+        "cap_extra_sell": 1,
+        "cap_special_rebuy": 1
+      },
+      "B_experiment_grid": {
+        "atr_window": [
+          14,
+          20,
+          30
+        ],
+        "atr_multiplier": [
+          1,
+          1.5,
+          2
+        ],
+        "decline_window_sessions": [
+          3
+        ]
+      },
+      "B_sample_in_best_not_promoted": {
+        "atr_window": 30,
+        "atr_multiplier": 1.5,
+        "QQQ_CAGR_approx": 0.1166,
+        "status": "RESEARCH_ONLY"
+      },
+      "frozen_rebuy": "FRESH_EMA5_10_GOLD_WHILE_EMA20_GT_EMA60_AND_SHADOW_H3_LONG",
+      "note": "A and B are alternative overlays, not simultaneously active; both are frozen candidates and not automated switches"
+    },
+    "volatility_regime": {
+      "status": "RESEARCH_CONTEXT_ONLY",
+      "features": [
+        "RV20_annualized",
+        "PREVIOUS_COMPLETED_WEEK_REALIZED_VOL",
+        "ATR_N_normalized"
+      ],
+      "gate_override_enabled": false
+    },
+    "sizing": {
+      "status": "FUTURE_SEPARATE_STUDY",
+      "baseline": "CASH_OR_FULL_INVESTMENT",
+      "parameters_to_research": [
+        "max_position_fraction",
+        "target_volatility",
+        "risk_budget",
+        "cash_yield"
+      ],
+      "warning": "Do not mistake historical 25% MDD as assured forward loss cap"
+    }
+  },
+  "experiment_rules": {
+    "isolation_order": [
+      "0_asset_data_contract_and_unmodified_H3_reproduction",
+      "1_compare_UNMODIFIED_H3_vs_UNMODIFIED_A_vs_UNMODIFIED_B",
+      "2_probe_B_ATR_window_multiplier_3x3_on_one_asset_at_a_time",
+      "3_run_entry_shape_event_study_without_promotion",
+      "4_if_events_sufficient_run_full_account_entry_shape_only",
+      "5_only_after_independent_success_test_entry_shape_x_profit_guard_combination",
+      "6_validate_sizing_and_cash_yield_separately",
+      "7_paper_track_precommitted_parameters"
+    ],
+    "prohibited_shortcuts": [
+      "NO_OPTIMIZATION_TO_HIGHEST_IN_SAMPLE_CAGR",
+      "NO_FUTURE_WEEK_OR_MONTH_FEATURES",
+      "NO_MIX_OF_FROZEN_AND_RETUNED_RULE_LABELS",
+      "NO_FULL_ACCOUNT_CLAIMS_FROM_ONLY_EVENT_SUCCESS_RATES",
+      "NO_SAMPLE_OOS_CLAIM_FOR_ALREADY_INSPECTED_QQQ_2000_2026",
+      "NO_REAL_TRADING_WITHOUT_SEPARATE_AUTHORIZATION"
+    ],
+    "evaluation": {
+      "hard_risk_target_account_MDD_range_fraction": [
+        0.2,
+        0.25
+      ],
+      "metrics": [
+        "CAGR",
+        "MDD",
+        "Calmar",
+        "Profit_Factor",
+        "Payoff",
+        "turnover",
+        "commission_drag",
+        "days_in_market",
+        "losing_streak",
+        "gap_loss_tail",
+        "opportunity_cost",
+        "annual_regime_performance",
+        "downside_sensitivity",
+        "cash_yield_scenarios"
+      ],
+      "baselines": [
+        "frozen_H3_same_asset",
+        "buy_and_hold_same_instrument",
+        "no_extra_profit_guard"
+      ],
+      "validation": "walk_forward_training_validation_with_embargoed_final_test_and_market_regime_subgroups",
+      "small_sample_policy": "do_not_promote_tiny_N_or_overlapping_events_based_on_positive_rate",
+      "parameter_selection": "stable_plateau_pareto_CAGR_MDD_turnover_not_max_CAGR",
+      "refit_policy": "precommitted_calendar_only_after_new_independent_data_or_marked_research_version"
+    },
+    "deliverables": [
+      "asset_data_audit",
+      "feature_asof_ledger",
+      "strategy_config_hash",
+      "trade_ledger",
+      "equity_curve",
+      "benchmark_equity",
+      "event_signal_audit",
+      "regime_attribution",
+      "walk_forward_scores",
+      "rejected_arms_registry",
+      "version_and_git_sha"
+    ]
+  }
+}
