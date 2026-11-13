@@ -19,6 +19,14 @@ This is a reproducible research repository for QQQ A2-N20. The task is not to ma
 4. The historically better-performing global **4% closing stop is a negative control / in-sample parameter-selection-bias example** (`stop4_control`), **not the selected rule**. Do not confuse better historical return with proof of overfitting either: the problem is lack of independent validation. Preserve both the attractive figures and the disconfirming cases.
 5. V3 and V2 are still research-only. There is **no brokerage order authorization**; all trades are completed-close signals and next-session regular-open fills, subject to unmodeled execution slippage. Do not classify V3 as proven out-of-sample or imply it guarantees a maximum 3%/7% loss.
 
+## Current repository front page: H3 + optional frozen A/B (2026-11-14)
+
+1. The latest **README entry point is H3**, not the historical 2026-11-11 EMA V3 snapshot. Read `docs/STRATEGY_H3_FROZEN.md` and use `research/experiments/a2_v3_1_h3_trend_spread_quick_reentry.py` with arm `H3_FROZEN` to reproduce H3. H3 inherits the original frozen V3 risk state machine and adds the previously researched deferred FAST qualification and accelerated-negative-month FAST mode; it **does not** activate experimental trend-spread exits.
+2. A/B v1.0 are frozen **separate profit-guard candidates**, not merged into H3. Their only authoritative rules, machine config and regression entrypoint are the unchanged paths below.
+3. The main `README.md` must remain a compact entrypoint: H3 rules, A/B comparison, current historical snapshot, reproduction instructions, and pointers to `docs/research/INDEX.md`. Put new experiments/negative-control results into their own `docs/research/` files and **index links**, never accumulate chronological experiments on the front page.
+4. Fast-forward research history into `main` only when the complete frozen H3/A/B files, tests and provenance are preserved. Do not flatten old V1/V2/V3 history, falsify latest signal state, upload licensed price series, or grant automated order authority.
+5. The words `H3 latest` mean latest **research presentation** at cutoff 2026-11-11, not a real-time portfolio or production release.
+
 ## Frozen research candidate: QQQ H3 Profit Guard A/B v1.0 (2026-11-13)
 
 - **Do not merge these into H3 by implication:** A/B are **research-only, separately frozen overlay candidates**, not a replacement of the canonical A2/V3/V3.1-H3 base rules or authorization to trade.
