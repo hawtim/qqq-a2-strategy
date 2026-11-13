@@ -7,6 +7,8 @@
 > **2026-11-12 H1/H2 后续检验：** 月 EMA5 下跌减速时提前放行 FAST 在 **QQQ / SPY 均显著恶化回撤**；仅限制延迟 FAST 为慢线多头也未改善 A。作为反向对照，“月线下跌加速 + 日线新金叉”历史表现出较强反弹，但高度依赖大行情、可能过拟合，**不纳入正式策略**。见 [逐笔和事件证据](docs/research/V3_1_H1_H2_月线斜率与日线趋势冲突_2026-11-12.md)、[策略对照 CSV](research/results/v3_1_regime_2026_07/strategy_summary.csv)、[20 日金叉事件 CSV](research/results/v3_1_regime_2026_07/fast_gold_20day_event_summary.csv)。
 
 
+**H3 Profit Guard A/B v1.0 — 当前已定稿的两套冻结研究候选（2026-11-13）**：[唯一行为规范](docs/STRATEGY_H3_PROFIT_GUARD_AB_V1.md) · [机器可读冻结参数](research/config/h3_profit_guard_ab_v1.json) · [版本固定的独立复算入口](research/experiments/h3_profit_guard_ab_v1_frozen.py) · [成功执行的候选冻结校验](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43363932994)。**A/B 都取消了10日最低持仓时间门槛，只保留浮盈峰值≥10%、每笔 H3 仅允许额外卖出/重入各1次。A 使用EMA5/20新死叉；B在A之上要求EMA10>EMA20与3日急跌≥1.5 ATR20；两组均通过年龄门槛0/10逐日净值完全一致校验。冻结的是研究候选，不是主H3或实盘策略。**
+
 **H3 QQQ A/B：去掉10天持仓限制、允许重复防御的18组消融（2026-11-13）**：[完整报告：10/3/0日门槛全部等价；A/B不限次数显著增加交易、降低CAGR；解释为何改善笔数增加但资金复利恶化](docs/research/H3_QQQ_AB_取消N10与重复止盈敏感性_2026-11-13.md) · [复现代码](research/experiments/h3_qqq_profit_guard_age_cycle_ablation.py) · [CSV](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43362400585/artifacts/14008925920)。SPY/日经待后续跨市场验证；冻结H3未改。
 
 **QQQ H3 利润保护 A/B 与 Buy & Hold 完整对比（2026-11-13）**：[同一日线、四组日度权益和 MDD、CAGR、28/22 次保护、浮盈回吐保留率、2022年和各年代反证、逐笔卖飞及收益贡献分析](docs/research/H3_QQQ_AB_利润保护完整对比_2026-11-13.md) · [四线财富图](assets/h3_profit_guard_A_B_wealth_2000_2026.svg) · [复现代码](research/experiments/h3_profit_guard_ab_full_report.py) · [CSV/交易数据](https://github.com/hawtim/qqq-a2-strategy/actions/runs/43360474392/artifacts/14007318752)。**B样本内CAGR 11.01%，A 10.69%，冻结H3 9.89%，B&H 8.31%；B未改善账户 MDD，冻结H3仍保持不变。**
