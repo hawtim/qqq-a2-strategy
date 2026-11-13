@@ -19,6 +19,14 @@ This is a reproducible research repository for QQQ A2-N20. The task is not to ma
 4. The historically better-performing global **4% closing stop is a negative control / in-sample parameter-selection-bias example** (`stop4_control`), **not the selected rule**. Do not confuse better historical return with proof of overfitting either: the problem is lack of independent validation. Preserve both the attractive figures and the disconfirming cases.
 5. V3 and V2 are still research-only. There is **no brokerage order authorization**; all trades are completed-close signals and next-session regular-open fills, subject to unmodeled execution slippage. Do not classify V3 as proven out-of-sample or imply it guarantees a maximum 3%/7% loss.
 
+## Frozen research candidate: QQQ H3 Profit Guard A/B v1.0 (2026-11-13)
+
+- **Do not merge these into H3 by implication:** A/B are **research-only, separately frozen overlay candidates**, not a replacement of the canonical A2/V3/V3.1-H3 base rules or authorization to trade.
+- Canonical human contract: `docs/STRATEGY_H3_PROFIT_GUARD_AB_V1.md`. Machine parameters: `research/config/h3_profit_guard_ab_v1.json`. Reproducible fixed entrypoint: `research/experiments/h3_profit_guard_ab_v1_frozen.py`.
+- For both QQQ candidates, use as-of peak close profit >=10%, positive as-of current close profit, EMA20>EMA60, **no minimum holding-age gate (age0)**, at most **one extra sell and one special rebuy** per original H3 position. A extra exit: fresh EMA5/20 death cross. B: A plus EMA10>EMA20 and decline over last three completed closes >=1.5 ATR20. Special reentry: fresh EMA5/10 gold cross while EMA20>EMA60 and original H3 shadow still long; fill next regular open.
+- H3 shadow original entry/exit, N20, monthly veto, FAST status must **not be reset** by intermediate real portfolio liquidation. Old age10 research results can be used for historical comparisons because age0 and age10 produce identical executions on the 2000–2026 QQQ dataset, but age0 is canonical prospectively.
+- No silent revisions to A/B parameters. New age thresholds, multiple cycles, SPY/Nikkei, dynamic regimes or custom reentries are independent later versioned experiments. No claim of sample-out performance.
+
 ## Data and honesty
 
 - Check `docs/DATA_SOURCES.md` before using data; do not add copyrighted/unlicensed price histories, paid FirstRate Data raw bars, secrets, brokerage tokens, or personal account exports.
